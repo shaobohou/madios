@@ -4,8 +4,8 @@
 
 TEMPLATE = app
 TARGET +=
-DEPENDPATH += . ../MScProject/Utils ../MScProject/Maths
-INCLUDEPATH += . ../MScProject/Utils ../MScProject/Maths
+DEPENDPATH += . ../Utils ../Maths
+INCLUDEPATH += . ../Utils ../Maths
 CONFIG += release
 CONFIG -= qt
 QMAKE_CXXFLAGS_RELEASE += -pedantic -ansi
