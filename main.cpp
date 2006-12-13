@@ -33,7 +33,8 @@ vector<vector<string> > readSequencesFromFile(const string &filename)
 
     while(!in.eof())
     {
-        string line = readLine(in);
+        string line;
+        getline(in, line);
 
         if(line.size() > 0)
         {

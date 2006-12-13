@@ -544,10 +544,10 @@ SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &s
 void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections, const Range &range) const
 {
     assert(range.first <= range.second);
-    assert(range.second < connections.numberOfRows());
+    assert(range.second < connections.numRows());
 
     // calculate P_R and P_L
-    flows = NRMatrix<double>(connections.numberOfRows(), connections.numberOfColumns(), -1.0);
+    flows = NRMatrix<double>(connections.numRows(), connections.numCols(), -1.0);
     for(unsigned int i = range.first; i <= range.second; i++)
         for(unsigned int j = range.first; j <= range.second; j++)
             if(i > j)
@@ -558,7 +558,7 @@ void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &
                 flows(i, j) = static_cast<double>(connections(i, j).size()) / corpusSize;
 
     // calculate D_R and D_L
-    descents = NRMatrix<double>(connections.numberOfRows(), connections.numberOfColumns(), -1.0);
+    descents = NRMatrix<double>(connections.numRows(), connections.numCols(), -1.0);
     for(unsigned int i = range.first; i <= range.second; i++)
         for(unsigned int j = range.first; j <= range.second; j++)
             if(i > j)
@@ -575,10 +575,10 @@ bool RDSGraph::findSignificantPatterns(vector<Range> &patterns, vector<Significa
     pvalues.clear();
 
     //find candidate pattern start and ends
-    unsigned int pathLength = descents.numberOfRows();
+    unsigned int pathLength = descents.numRows();
     vector<unsigned int> candidateEndRows;
     vector<unsigned int> candidateStartRows;
-    for(unsigned int i = 0; i < descents.numberOfRows(); i++)
+    for(unsigned int i = 0; i < descents.numRows(); i++)
     {
         for(int j = i - 1; j >= 0; j--)
             if(descents(i, j) < eta)
@@ -587,7 +587,7 @@ bool RDSGraph::findSignificantPatterns(vector<Range> &patterns, vector<Significa
                 break;
             }
 
-        for(unsigned int j = i + 1; j < descents.numberOfColumns(); j++)
+        for(unsigned int j = i + 1; j < descents.numCols(); j++)
             if(descents(i, j) < eta)
             {
                 candidateStartRows.push_back(i + 1);
@@ -829,7 +829,7 @@ double RDSGraph::findBestLeftDescentColumn(unsigned int &bestColumn, NRMatrix<do
 {
     double pvalue = 2.0;
     pair<unsigned int, unsigned int> descentPoint(pattern.first - 1, bestColumn);
-    for(unsigned int i = pattern.second; i < connections.numberOfColumns(); i++)
+    for(unsigned int i = pattern.second; i < connections.numCols(); i++)
     {
         descentPoint.second = i;
         if(!(descents(descentPoint.first, descentPoint.second) < eta)) continue;
@@ -968,7 +968,7 @@ unsigned int RDSGraph::predict(const SearchPath &searchPath) const
         parseTrees.clear();
         leftCorners.clear();
         bottomUpSearchLeft(parseTrees, leftCorners, newParseTrees);
-        
+
         std::cout << "----------------------------------------------------------------" << endl;
         std::cout << printNode(searchPath[i]) << endl;
         for(unsigned int j = 0; j < parseTrees.size(); j++)
@@ -1039,7 +1039,7 @@ void RDSGraph::bottomUpSearchRight(vector<ParseTree<unsigned int> > &parseTrees,
     {
         unsigned int testPattern = testConnections[i].first;
         unsigned int testPosition = testConnections[i].second;
-        
+
         unsigned int oldWorkingRoot = workingParseTree.root;
         workingParseTree.pushOn(createParseNode(testPattern), testConnections[i]);
 
@@ -1067,7 +1067,7 @@ void RDSGraph::bottomUpSearchRight(vector<ParseTree<unsigned int> > &parseTrees,
             bottomUpSearchRight(parseTrees, workingParseTree, testPattern, leftCorners, oldParseTrees);
         else
             assert(false);
-            
+
         workingParseTree.popOff(testConnections[i]);
     }
 }
@@ -1176,7 +1176,7 @@ unsigned int RDSGraph::predict(const SearchPath &searchPath) const
         parseTrees.clear();
         leftCorners.clear();
         bottomUpSearchLeft(parseTrees, leftCorners, newParseTrees);
-        
+
         std::cout << "----------------------------------------------------------------" << endl;
         std::cout << printNode(searchPath[i]) << endl;
         for(unsigned int j = 0; j < parseTrees.size(); j++)
@@ -1194,19 +1194,19 @@ unsigned int RDSGraph::predict(const SearchPath &searchPath) const
 }
 
 void RDSGraph::initialiseParseTrees(std::vector<ParseTree<unsigned int> > &parseTrees, ParseTree<unsigned int> &workingParseTree, unsigned int unit) const
-{     
+{
     bool success = false;
     vector<Connection> parents = nodes[unit].parents;
     for(unsigned int i = 0; i < parents.size(); i++)
     {
         unsigned int parentPattern = parents[i].first;
         unsigned int parentPosition = parents[i].second;
-        
+
         workingParseTree.pushOn(createParseNode(parentPattern), parents[i]);
 
         if(nodes[parentPattern].type == LexiconTypes::SP)
         {
-            if(parentPosition == 0)    // since all SP are at least of length 2 
+            if(parentPosition == 0)    // since all SP are at least of length 2
             {
                 parseTrees.push_back(workingParseTree);
                 success = true;
@@ -1219,10 +1219,10 @@ void RDSGraph::initialiseParseTrees(std::vector<ParseTree<unsigned int> > &parse
         }
         else    // not possible to reach here
             assert(false);
-            
+
         workingParseTree.popOff(parents[i]);
     }
-    
+
     if(!success)
         parseTrees.push_back(workingParseTree);
 }
@@ -1337,23 +1337,23 @@ void RDSGraph::printParseTree(unsigned int parseNode, const ParseTree<unsigned i
 
 void printInfo(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents)
 {
-    for(unsigned int i = 0; i < connections.numberOfRows(); i++)
+    for(unsigned int i = 0; i < connections.numRows(); i++)
     {
-        for(unsigned int j = 0; j < connections.numberOfColumns(); j++)
+        for(unsigned int j = 0; j < connections.numCols(); j++)
             std::cout << connections(i, j).size() << "\t";
         std::cout << endl;
     }
     std::cout << endl << endl << endl;
-    for(unsigned int i = 0; i < flows.numberOfRows(); i++)
+    for(unsigned int i = 0; i < flows.numRows(); i++)
     {
-        for(unsigned int j = 0; j < flows.numberOfColumns(); j++)
+        for(unsigned int j = 0; j < flows.numCols(); j++)
             std::cout << flows(i, j) << "\t";
         std::cout << endl;
     }
     std::cout << endl << endl << endl;
-    for(unsigned int i = 0; i < descents.numberOfRows(); i++)
+    for(unsigned int i = 0; i < descents.numRows(); i++)
     {
-        for(unsigned int j = 0; j < descents.numberOfColumns(); j++)
+        for(unsigned int j = 0; j < descents.numCols(); j++)
             std::cout << descents(i, j) << "\t";
         std::cout << endl;
     }
