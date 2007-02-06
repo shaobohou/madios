@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     cout << testGraph << endl << endl;
 
     std::cout << endl << "Time elapsed: " << endTime - startTime << " seconds" << endl << endl << endl << endl;
-
+/*
     vector<string> testString(sequences[10].begin(), sequences[10].end());
     for(unsigned int i = 0; i < testString.size() - 1; i++)
         std::cout << testString[i] << " ";
@@ -103,5 +103,5 @@ int main(int argc, char *argv[])
             for(unsigned int j = 0; j < sequence.size(); j++)
                 std::cout << sequence[j] << " ";
             std::cout << endl;
-        }
+        }*/
 }

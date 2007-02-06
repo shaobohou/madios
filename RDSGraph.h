@@ -5,7 +5,7 @@
 #include "ADIOSUtils.h"
 #include "global.h"
 #include "MiscUtils.h"
-#include "ParseTree.h"
+//#include "ParseTree.h"
 
 #include <string>
 #include <sstream>
@@ -24,9 +24,6 @@ class RDSGraph: public Stringable
         std::vector<std::string> generate(const SearchPath &searchPath) const;
         std::vector<std::string> generate(unsigned int node) const;
         void distill(const ADIOSParams &params);
-
-        SearchPath encode(const std::vector<std::string> &sequence) const;
-        unsigned int predict(const SearchPath &searchPath) const;
 
         virtual std::string toString() const;
 
@@ -69,19 +66,11 @@ class RDSGraph: public Stringable
         std::vector<Connection> getAllNodeConnections(unsigned int nodeIndex) const;
         std::vector<Connection> getEquivalenceConnections(const EquivalenceClass &ec) const;
 
-        // prediction functions
-        void bottomUpSearchLeft(std::vector<ParseTree<unsigned int> > &parseTrees, ParseTree<unsigned int> &workingParseTree, unsigned int unit) const;
-        void bottomUpSearchLeft(std::vector<ParseTree<unsigned int> > &parseTrees, std::vector<unsigned int> &leftCorners, const std::vector<ParseTree<unsigned int> > &oldParseTrees) const;
-        void bottomUpSearchRight(std::vector<ParseTree<unsigned int> > &parseTrees, ParseTree<unsigned int> &workingParseTree, unsigned int unit, const std::vector<unsigned int> &leftCorners, const std::vector<ParseTree<unsigned int> > &oldParseTrees) const;
-        ParseNode<unsigned int> createParseNode(unsigned int theNode) const;
-        void initialiseParseTrees(std::vector<ParseTree<unsigned int> > &parseTrees, ParseTree<unsigned int> &workingParseTree, unsigned int unit) const;
-
         // print functions
         std::string printSignificantPattern(const SignificantPattern &sp) const;
         std::string printEquivalenceClass(const EquivalenceClass &ec) const;
         std::string printNode(unsigned int node) const;
         std::string printPath(const SearchPath &path) const;
-        void printParseTree(unsigned int parseNode, const ParseTree<unsigned int> &parseTree, unsigned int tabLevel) const;
 };
 
 void printInfo(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents);
