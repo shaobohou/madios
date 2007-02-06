@@ -31,12 +31,25 @@ bool SearchPath::operator==(const SearchPath &other) const
     return true;
 }
 
-SearchPath SearchPath::operator()(unsigned int start, unsigned int end) const
+SearchPath SearchPath::operator()(unsigned int start, unsigned int finish) const
 {
-    assert(start <= end);
-    assert(end < size());
+    assert(start <= finish);
+    assert(finish< size());
 
-    return SearchPath(vector<unsigned int>(begin() + start, begin() + end + 1));
+    return SearchPath(vector<unsigned int>(begin() + start, begin() + finish + 1));
+}
+
+SearchPath SearchPath::substitute(unsigned int start, unsigned int finish, const SearchPath &segment) const
+{
+    assert(start <= finish);
+    assert(finish < size());
+
+    SearchPath newPath;
+    newPath.insert(newPath.end(), begin(), begin()+start);
+    newPath.insert(newPath.end(), segment.begin(), segment.end());
+    newPath.insert(newPath.end(), begin()+finish+1, end());
+
+    return newPath;
 }
 
 string SearchPath::toString() const

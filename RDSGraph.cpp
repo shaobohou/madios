@@ -163,11 +163,12 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
     SearchPathInfo searchPathInfo;
     searchPathInfo.searchPath = searchPath;
     searchPathInfo.alreadyTested = false;
-    for(unsigned int i = 0; (i + params.contextSize) <= searchPath.size(); i++)
+    for(unsigned int i = 0; (i+params.contextSize-1) < searchPath.size(); i++)
     {
         BootstrapInfo bootstrapInfo;
-        bootstrapInfo.context = Range(i, i + params.contextSize - 1);
-        SearchPath boostedPath = bootstrap(bootstrapInfo, searchPath, bootstrapInfo.context.first, bootstrapInfo.context.second, params.overlapThreshold);
+        bootstrapInfo.context = Range(i, i+params.contextSize-1);
+        SearchPath boostedPath_part = bootstrap(bootstrapInfo, searchPath(i, i+params.contextSize-1), params.overlapThreshold);
+        SearchPath boostedPath = searchPath.substitute(i, i+params.contextSize-1, boostedPath_part);
 
         std::cout << "[" << bootstrapInfo.context.first << " - " << bootstrapInfo.context.second << "] ";
         //std::cout << "+++++++++++++ " << boostedPath << endl;
@@ -480,15 +481,15 @@ SearchPath RDSGraph::computeGeneralisedSubpaths(EquivalenceClass &ec, Connection
     return generalPath;
 }
 
-SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, unsigned int prefix, unsigned int postfix, double overlapThreshold) const
+SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, double overlapThreshold) const
 {
     // find all possible connections
-    vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[prefix]);
-    equivalenceConnections = filterConnections(equivalenceConnections, postfix-prefix, searchPath(postfix, postfix));
+    vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[0]);
+    equivalenceConnections = filterConnections(equivalenceConnections, searchPath.size()-1, searchPath(searchPath.size()-1, searchPath.size()-1));
 
     // find potential ECs
     bootstrapInfo.encounteredECs.clear();
-    for(unsigned int i = prefix + 1; i < postfix; i++)
+    for(unsigned int i = 1; i < searchPath.size()-1; i++)
     {
         bootstrapInfo.encounteredECs.push_back(EquivalenceClass());
         for(unsigned int j = 0; j < equivalenceConnections.size(); j++)
@@ -496,13 +497,13 @@ SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &s
             unsigned int currentPath = equivalenceConnections[j].first;
             unsigned int currentStart = equivalenceConnections[j].second;
 
-            bootstrapInfo.encounteredECs.back().add(paths[currentPath][currentStart+i-prefix]);
+            bootstrapInfo.encounteredECs.back().add(paths[currentPath][currentStart+i]);
         }
     }
 
     // init bootstrap data
-    bootstrapInfo.overlapECs = searchPath(prefix + 1, postfix - 1);
-    bootstrapInfo.overlapRatios = vector<double>(postfix - prefix - 1, 0.0);
+    bootstrapInfo.overlapECs = searchPath(1, searchPath.size()-2);
+    bootstrapInfo.overlapRatios = vector<double>(searchPath.size()-2, 0.0);
 
     // bootstrap search path
     SearchPath bootstrapPath = searchPath;
@@ -518,7 +519,7 @@ SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &s
                     bootstrapInfo.overlapRatios[i] = overlap;
                 }
             }
-        bootstrapPath[prefix + i + 1] = bootstrapInfo.overlapECs[i];
+        bootstrapPath[i + 1] = bootstrapInfo.overlapECs[i];
     }
 
     return bootstrapPath;

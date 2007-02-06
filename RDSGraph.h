@@ -40,7 +40,7 @@ class RDSGraph: public Stringable
 
         // generalise and bootstrap
         SearchPath computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd);
-        SearchPath bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, unsigned int prefix, unsigned int postfix, double overlapThreshold) const;
+        SearchPath bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, double overlapThreshold) const;
 
         // compute matrix and pattern searching function
         void computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath) const;
