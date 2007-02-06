@@ -39,12 +39,12 @@ class RDSGraph: public Stringable
         bool generalisationStage(SignificantPatternInfo &bestPatternInfo, const SearchPath &searchPath, const ADIOSParams &params, const ConnectionMatrix &connections);
 
         // generalise and bootstrap
-        SearchPath computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd, const Range &range);
-        SearchPath bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, unsigned int prefix, unsigned int postfix, double overlapThreshold, const Range &range) const;
+        SearchPath computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd);
+        SearchPath bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, unsigned int prefix, unsigned int postfix, double overlapThreshold) const;
 
         // compute matrix and pattern searching function
-        void computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath, const Range &range) const;
-        void computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections, const Range &range) const;
+        void computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath) const;
+        void computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections) const;
         bool findSignificantPatterns(std::vector<Range> &patterns, std::vector<SignificancePair> &pvalues, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, double eta, double alpha) const;
 
         // rewiring and update functions

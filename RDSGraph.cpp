@@ -128,13 +128,11 @@ vector<string> RDSGraph::generate(unsigned int node) const
 
 bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
 {
-    Range range(0, searchPath.size() - 1);
-
     // look possible significant pattern found with help of equivalence class
     ConnectionMatrix connections;
     NRMatrix<double> flows, descents;
-    computeConnectionMatrix(connections, searchPath, range);
-    computeDescentsMatrix(flows, descents, connections, range);
+    computeConnectionMatrix(connections, searchPath);
+    computeDescentsMatrix(flows, descents, connections);
 
     vector<Range> patterns;
     vector<SignificancePair> pvalues;
@@ -156,8 +154,6 @@ bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
 
 bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &params)
 {
-    Range range(0, searchPath.size() - 1);
-
     // Significant Pattern Info
     bool patternFound = false;
     BootstrapInfo bestBootstrapInfo;
@@ -171,7 +167,7 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
     {
         BootstrapInfo bootstrapInfo;
         bootstrapInfo.context = Range(i, i + params.contextSize - 1);
-        SearchPath boostedPath = bootstrap(bootstrapInfo, searchPath, bootstrapInfo.context.first, bootstrapInfo.context.second, params.overlapThreshold, range);
+        SearchPath boostedPath = bootstrap(bootstrapInfo, searchPath, bootstrapInfo.context.first, bootstrapInfo.context.second, params.overlapThreshold);
 
         std::cout << "[" << bootstrapInfo.context.first << " - " << bootstrapInfo.context.second << "] ";
         //std::cout << "+++++++++++++ " << boostedPath << endl;
@@ -251,8 +247,6 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
 
 bool RDSGraph::bootstrapStage(SignificantPatternInfo &bestPatternInfo, EquivalenceClassInfo &bestECInfo, const SearchPath &searchPath, const ADIOSParams &params, const Range &context, SearchPathInfo &searchPathInfo)
 {
-    Range range(0, searchPath.size() - 1);
-
     bool patternFound = false;
     vector<SearchPath> previousPaths;
     for(unsigned int i = context.first + 1; i < context.second; i++)
@@ -260,7 +254,7 @@ bool RDSGraph::bootstrapStage(SignificantPatternInfo &bestPatternInfo, Equivalen
         // look for possible equivalence class
         EquivalenceClass ec;
         ConnectionMatrix connections;
-        SearchPath generalPath = computeGeneralisedSubpaths(ec, connections, searchPath, context.first, i, context.second, range);
+        SearchPath generalPath = computeGeneralisedSubpaths(ec, connections, searchPath, context.first, i, context.second);
 
         // see if paths already tested
         bool repeated = false;
@@ -325,13 +319,11 @@ bool RDSGraph::bootstrapStage(SignificantPatternInfo &bestPatternInfo, Equivalen
 
 bool RDSGraph::generalisationStage(SignificantPatternInfo &bestPatternInfo, const SearchPath &searchPath, const ADIOSParams &params, const ConnectionMatrix &connections)
 {
-    Range range(0, searchPath.size() - 1);
-
     // look possible significant pattern found with help of equivalence class
     vector<Range> patterns;
     vector<SignificancePair> pvalues;
     NRMatrix<double> flows, descents;
-    computeDescentsMatrix(flows, descents, connections, range);
+    computeDescentsMatrix(flows, descents, connections);
     if(!findSignificantPatterns(patterns, pvalues, connections, flows, descents, params.eta, params.alpha))
         return false;
 
@@ -412,19 +404,17 @@ void RDSGraph::buildInitialGraph(const vector<vector<string> > &sequences)
     updateAllConnections();
 }
 
-void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath, const Range &range) const
+void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath) const
 {
-    assert(range.first <= range.second);
-    assert(range.second < searchPath.size());
-
     // calculate subpath distributions, symmetrical matrix
-    connections = ConnectionMatrix(searchPath.size(), searchPath.size());
-    for(unsigned int i = range.first; i <= range.second; i++)
+    unsigned dim = searchPath.size();
+    connections = ConnectionMatrix(dim, dim);
+    for(unsigned int i = 0; i < dim; i++)
     {
         connections(i, i) = getAllNodeConnections(searchPath[i]);
 
         // compute the column from the diagonal
-        for(unsigned int j = i + 1; j <= range.second; j++)
+        for(unsigned int j = i + 1; j < dim; j++)
         {
             connections(j, i) = filterConnections(connections(j - 1, i), j-i, searchPath(j, j));
             connections(i, j) = connections(j, i);
@@ -432,10 +422,8 @@ void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const Sear
     }
 }
 
-SearchPath RDSGraph::computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd, const Range &range)
+SearchPath RDSGraph::computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd)
 {
-    assert(range.first <= range.second);
-    assert(range.second < searchPath.size());
     assert(prefixStart < slotIndex);
     assert(slotIndex < postfixEnd);
 
@@ -479,24 +467,21 @@ SearchPath RDSGraph::computeGeneralisedSubpaths(EquivalenceClass &ec, Connection
             //tempGraph.computeConnectionMatrix(connections, generalPath, range);
             rewire(vector<Connection>(), new EquivalenceClass(ec));
             generalPath[slotIndex] = nodes.size() - 1;
-            computeConnectionMatrix(connections, generalPath, range);
+            computeConnectionMatrix(connections, generalPath);
             nodes.pop_back();
             updateAllConnections();
         }
         else
-            computeConnectionMatrix(connections, generalPath, range);
+            computeConnectionMatrix(connections, generalPath);
     }
     else
-        computeConnectionMatrix(connections, generalPath, range);
+        computeConnectionMatrix(connections, generalPath);
 
     return generalPath;
 }
 
-SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, unsigned int prefix, unsigned int postfix, double overlapThreshold, const Range &range) const
+SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, unsigned int prefix, unsigned int postfix, double overlapThreshold) const
 {
-    assert(range.first <= range.second);
-    assert(range.second < searchPath.size());
-
     // find all possible connections
     vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[prefix]);
     equivalenceConnections = filterConnections(equivalenceConnections, postfix-prefix, searchPath(postfix, postfix));
@@ -539,15 +524,13 @@ SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &s
     return bootstrapPath;
 }
 
-void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections, const Range &range) const
+void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections) const
 {
-    assert(range.first <= range.second);
-    assert(range.second < connections.numRows());
-
     // calculate P_R and P_L
-    flows = NRMatrix<double>(connections.numRows(), connections.numCols(), -1.0);
-    for(unsigned int i = range.first; i <= range.second; i++)
-        for(unsigned int j = range.first; j <= range.second; j++)
+    unsigned dim = connections.numRows();
+    flows = NRMatrix<double>(dim, dim, -1.0);
+    for(unsigned int i = 0; i < dim; i++)
+        for(unsigned int j = 0; j < dim; j++)
             if(i > j)
                 flows(i, j) = static_cast<double>(connections(i, j).size()) / connections(i-1, j).size();
             else if(i < j)
@@ -556,9 +539,9 @@ void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &
                 flows(i, j) = static_cast<double>(connections(i, j).size()) / corpusSize;
 
     // calculate D_R and D_L
-    descents = NRMatrix<double>(connections.numRows(), connections.numCols(), -1.0);
-    for(unsigned int i = range.first; i <= range.second; i++)
-        for(unsigned int j = range.first; j <= range.second; j++)
+    descents = NRMatrix<double>(dim, dim, -1.0);
+    for(unsigned int i = 0; i < dim; i++)
+        for(unsigned int j = 0; j < dim; j++)
             if(i > j)
                 descents(i, j) = flows(i, j) / flows(i-1, j);
             else if(i < j)
