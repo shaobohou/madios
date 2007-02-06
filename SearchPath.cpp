@@ -31,12 +31,12 @@ bool SearchPath::operator==(const SearchPath &other) const
     return true;
 }
 
-vector<unsigned int> SearchPath::operator()(unsigned int start, unsigned int end) const
+SearchPath SearchPath::operator()(unsigned int start, unsigned int end) const
 {
     assert(start <= end);
     assert(end < size());
 
-    return vector<unsigned int>(begin() + start, begin() + end + 1);
+    return SearchPath(vector<unsigned int>(begin() + start, begin() + end + 1));
 }
 
 string SearchPath::toString() const
@@ -58,7 +58,7 @@ void SearchPath::rewire(const vector<Connection> &connections, unsigned int newN
     {
         if(i > 0) assert(connections[i].second > connections[i-1].second);
         if((count > 0) && (connections[i].second < (connections[lastRewired].second + patternLength))) continue;
-                     
+
         unsigned int offset = (patternLength - 1) * count;
         unsigned int start = connections[i].second - offset;
         unsigned int end = connections[i].second + patternLength - offset;

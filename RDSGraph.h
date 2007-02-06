@@ -62,7 +62,7 @@ class RDSGraph: public Stringable
         double findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
         double findBestLeftDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
 
-        void filterConnections(std::vector<Connection> &connections, const SearchPath &searchPath, const Range &range, unsigned int startOffset) const;
+        std::vector<Connection> filterConnections(const std::vector<Connection> &init_cons, unsigned int start_offset, const SearchPath &search_path) const;
         std::vector<Connection> getAllNodeConnections(unsigned int nodeIndex) const;
         std::vector<Connection> getEquivalenceConnections(const EquivalenceClass &ec) const;
 

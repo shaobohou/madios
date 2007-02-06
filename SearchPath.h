@@ -15,7 +15,7 @@ class SearchPath: public Stringable, public std::vector<unsigned int>
         virtual ~SearchPath();
 
         bool operator==(const SearchPath &other) const;
-        std::vector<unsigned int> operator()(unsigned int start, unsigned int end) const;
+        SearchPath operator()(unsigned int start, unsigned int end) const;
         virtual std::string toString() const;
 
         void rewire(const std::vector<Connection> &connections, unsigned int newNode, unsigned int patternLength);

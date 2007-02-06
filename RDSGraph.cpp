@@ -426,10 +426,8 @@ void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const Sear
         // compute the column from the diagonal
         for(unsigned int j = i + 1; j <= range.second; j++)
         {
-            vector<Connection> tempConnections = connections(j - 1, i);
-            filterConnections(tempConnections, searchPath, Range(j, j), i);
-            connections(j, i) = tempConnections;
-            connections(i, j) = tempConnections;
+            connections(j, i) = filterConnections(connections(j - 1, i), j-i, searchPath(j, j));
+            connections(i, j) = connections(j, i);
         }
     }
 }
@@ -443,8 +441,8 @@ SearchPath RDSGraph::computeGeneralisedSubpaths(EquivalenceClass &ec, Connection
 
     // get the candidate connections
     vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[prefixStart]);
-    filterConnections(equivalenceConnections, searchPath, Range(prefixStart, slotIndex - 1), prefixStart);
-    filterConnections(equivalenceConnections, searchPath, Range(slotIndex + 1, postfixEnd), prefixStart);
+    equivalenceConnections = filterConnections(equivalenceConnections, 0,                       searchPath(prefixStart, slotIndex - 1));
+    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1-prefixStart, searchPath(slotIndex + 1, postfixEnd));
 
     //build equivalence class
     ec = EquivalenceClass();
@@ -501,7 +499,7 @@ SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &s
 
     // find all possible connections
     vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[prefix]);
-    filterConnections(equivalenceConnections, searchPath, Range(postfix, postfix), prefix);
+    equivalenceConnections = filterConnections(equivalenceConnections, postfix-prefix, searchPath(postfix, postfix));
 
     // find potential ECs
     bootstrapInfo.encounteredECs.clear();
@@ -846,29 +844,40 @@ double RDSGraph::findBestLeftDescentColumn(unsigned int &bestColumn, NRMatrix<do
     return pvalue;
 }
 
-void RDSGraph::filterConnections(vector<Connection> &connections, const SearchPath &searchPath, const Range &range, unsigned int startOffset) const
+vector<Connection> RDSGraph::filterConnections(const vector<Connection> &init_cons, unsigned int start_offset, const SearchPath &search_path) const
 {
-    for(unsigned int i = range.first; i <= range.second; i++)
+    vector<Connection> filtered_cons;
+    for(unsigned int i = 0; i < init_cons.size(); i++)
     {
-        vector<Connection> tempConnections;
-        for(unsigned int j = 0; j < connections.size(); j++)
+        unsigned int cur_path = init_cons[i].first;
+        unsigned int cur_pos = init_cons[i].second;
+
+        // discard current connection because the path is not long enough to match the search path (segment)
+        if((cur_pos+start_offset+search_path.size()) > paths[cur_path].size())
+            continue;
+
+        unsigned int count = search_path.size();
+        for(unsigned int j = 0; j < search_path.size(); j++)
         {
-            unsigned int currentPath = connections[j].first;
-            unsigned int currentStart = connections[j].second;
-            unsigned int currentPosition = currentStart + i - startOffset;
-            unsigned int testNode = searchPath[i];
-
-            if(currentPosition < paths[currentPath].size())
-            {
-                unsigned int currentNode = paths[currentPath][currentPosition];
-
-                if((currentNode == testNode) ||
-                  ((nodes[testNode].type == LexiconTypes::EC) && static_cast<EquivalenceClass *>(nodes[testNode].lexicon)->has(currentNode)))
-                    tempConnections.push_back(connections[j]);
+            unsigned int actual_pos = j+cur_pos+start_offset;
+            if(nodes[search_path[j]].type == LexiconTypes::EC)
+            {   // if node on search path is EC and it contains the node and temp path
+                if(!(static_cast<EquivalenceClass *>(nodes[search_path[j]].lexicon)->has(paths[cur_path][actual_pos])))
+                    break;
             }
+            else// else just test if they are the same node (BasicSymbol)
+                if(search_path[j] != paths[cur_path][actual_pos])
+                    break;
+
+            count--;
         }
-        connections = tempConnections;
+
+        // 0 if search_path completely matches temp_path
+        if(count == 0)
+            filtered_cons.push_back(init_cons[i]);
     }
+
+    return filtered_cons;
 }
 
 vector<Connection> RDSGraph::getAllNodeConnections(unsigned int nodeIndex) const

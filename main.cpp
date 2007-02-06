@@ -88,6 +88,13 @@ int main(int argc, char *argv[])
 
     std::cout << endl << "Time elapsed: " << endTime - startTime << " seconds" << endl << endl << endl << endl;
 /*
+    startTime = getTime();
+    testGraph.distill(ADIOSParams(atof(argv[2]), atof(argv[3])*10, atoi(argv[4])-2, atof(argv[5])));
+    endTime = getTime();
+    cout << testGraph << endl << endl;
+
+    std::cout << endl << "Time elapsed: " << endTime - startTime << " seconds" << endl << endl << endl << endl;*/
+/*
     vector<string> testString(sequences[10].begin(), sequences[10].end());
     for(unsigned int i = 0; i < testString.size() - 1; i++)
         std::cout << testString[i] << " ";
