@@ -10,6 +10,8 @@
 #include <string>
 #include <sstream>
 
+// code still too messy
+
 // true, if both pvalues are less than alpha
 bool isPatternSignificant(const SignificancePair &pvalues, double alpha);
 bool operator<(const SignificancePair &a, const SignificancePair &b);
