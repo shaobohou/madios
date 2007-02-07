@@ -190,6 +190,9 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
     {
     std::cout << "BEST PATTERN###########################################################################################################" << endl;
     std::cout << "RANGE = [" << bestPatternInfo.patternRange.first << " " << bestPatternInfo.patternRange.second << "]" << endl;
+    // DANGEROUS SP and EC have not been rewired yet and but printSignificantPattern will expect them and will access beyond the size
+    // of the vector of RDSNodes, no memory fault occurs at the mo due to the effect of temporarily adding the them to the vector
+    // must correct after the rest of the code have been cleaned up., see printSignificantPattern for the assert command that shows this
     std::cout << "P[" << printSignificantPattern(bestPatternInfo.pattern) << "] with " << "[" << bestPatternInfo.pvalues.first << " " << bestPatternInfo.pvalues.second << "]" << endl;
     std::cout << bestPatternInfo.connections.size() << " connections" << endl;
     if(bestECInfo.ec.size() > 1)
@@ -895,6 +898,7 @@ string RDSGraph::printSignificantPattern(const SignificantPattern &sp) const
     for(unsigned int i = 0; i < sp.size(); i++)
     {
         unsigned tempIndex = sp[i];
+        //assert(tempIndex < nodes.size());
         if(nodes[tempIndex].type == LexiconTypes::EC)
             sout << "E" << tempIndex;
         else if(nodes[tempIndex].type == LexiconTypes::SP)
