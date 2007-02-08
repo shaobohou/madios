@@ -57,8 +57,6 @@ class RDSGraph: public Stringable
         std::vector<Connection> getRewirableConnections(const ConnectionMatrix &connections, const Range &bestSP, double alpha) const;
 
         // pattern searching auxiliary functions
-        //bool findRightDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const;
-        //bool findLeftDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const;
         double computeRightSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
         double computeLeftSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
         double findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
@@ -66,7 +64,6 @@ class RDSGraph: public Stringable
 
         std::vector<Connection> filterConnections(const std::vector<Connection> &init_cons, unsigned int start_offset, const SearchPath &search_path) const;
         std::vector<Connection> getAllNodeConnections(unsigned int nodeIndex) const;
-        std::vector<Connection> getEquivalenceConnections(const EquivalenceClass &ec) const;
 
         // print functions
         std::string printSignificantPattern(const SignificantPattern &sp) const;
