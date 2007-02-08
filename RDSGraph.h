@@ -41,7 +41,7 @@ class RDSGraph: public Stringable
         bool generalisationStage(SignificantPatternInfo &bestPatternInfo, const SearchPath &searchPath, const ADIOSParams &params, const ConnectionMatrix &connections);
 
         // generalise and bootstrap
-        SearchPath computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd);
+        EquivalenceClass computeEquivalenceClass(const SearchPath &searchPath, unsigned int slotIndex);
         SearchPath bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, double overlapThreshold) const;
 
         // compute matrix and pattern searching function
@@ -57,8 +57,8 @@ class RDSGraph: public Stringable
         std::vector<Connection> getRewirableConnections(const ConnectionMatrix &connections, const Range &bestSP, double alpha) const;
 
         // pattern searching auxiliary functions
-        bool findRightDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const;
-        bool findLeftDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const;
+        //bool findRightDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const;
+        //bool findLeftDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const;
         double computeRightSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
         double computeLeftSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
         double findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;

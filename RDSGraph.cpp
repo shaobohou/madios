@@ -256,9 +256,47 @@ bool RDSGraph::bootstrapStage(SignificantPatternInfo &bestPatternInfo, Equivalen
     for(unsigned int i = context.first + 1; i < context.second; i++)
     {
         // look for possible equivalence class
-        EquivalenceClass ec;
+        EquivalenceClass ec = computeEquivalenceClass(searchPath(context.first, context.second), i-context.first);
+        
+        
+        
+        SearchPath generalPath = searchPath;
         ConnectionMatrix connections;
-        SearchPath generalPath = computeGeneralisedSubpaths(ec, connections, searchPath, context.first, i, context.second);
+    if(ec.size() > 1)
+    {
+        bool existingECFound = false;
+        for(unsigned int j = 0; j < nodes.size(); j++)
+            if(nodes[j].type == LexiconTypes::EC)
+                if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[j].lexicon))) >= 1.0)
+                {
+                    existingECFound = true;
+                    ec = EquivalenceClass();
+                    generalPath[i] = j;
+                    break;
+                }
+
+         //construct temporary RDSGraph to represent rewiring of the EquivalenceClass
+        if(!existingECFound)
+        {
+            //RDSGraph tempGraph(*this);
+            //tempGraph.rewire(vector<Connection>(), new EquivalenceClass(ec));
+            //generalPath[slotIndex] = tempGraph.nodes.size() - 1;
+            //tempGraph.computeConnectionMatrix(connections, generalPath, range);
+            rewire(vector<Connection>(), new EquivalenceClass(ec));
+            generalPath[i] = nodes.size() - 1;
+            computeConnectionMatrix(connections, generalPath);
+            nodes.pop_back();
+            updateAllConnections();
+        }
+        else
+            computeConnectionMatrix(connections, generalPath);
+    }
+    else
+        computeConnectionMatrix(connections, generalPath);
+        
+        
+        
+        
 
         // see if paths already tested
         bool repeated = false;
@@ -426,69 +464,34 @@ void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const Sear
     }
 }
 
-SearchPath RDSGraph::computeGeneralisedSubpaths(EquivalenceClass &ec, ConnectionMatrix &connections, const SearchPath &searchPath, unsigned int prefixStart, unsigned int slotIndex, unsigned int postfixEnd)
+EquivalenceClass RDSGraph::computeEquivalenceClass(const SearchPath &searchPath, unsigned int slotIndex)
 {
-    assert(prefixStart < slotIndex);
-    assert(slotIndex < postfixEnd);
+    assert(0 < slotIndex);
+    assert(slotIndex < (searchPath.size()-1));
 
     // get the candidate connections
-    vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[prefixStart]);
-    equivalenceConnections = filterConnections(equivalenceConnections, 0,                       searchPath(prefixStart, slotIndex - 1));
-    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1-prefixStart, searchPath(slotIndex + 1, postfixEnd));
+    vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[0]);
+    equivalenceConnections = filterConnections(equivalenceConnections, 0,           searchPath(0, slotIndex-1));
+    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1, searchPath(slotIndex+1, searchPath.size()-1));
 
     //build equivalence class
-    ec = EquivalenceClass();
+    EquivalenceClass ec;
     for(unsigned int i = 0; i < equivalenceConnections.size(); i++)
     {
         unsigned int currentPath = equivalenceConnections[i].first;
         unsigned int currentStart = equivalenceConnections[i].second;
 
-        equivalenceConnections[i].second = currentStart + slotIndex - prefixStart;
+        equivalenceConnections[i].second = currentStart + slotIndex;
         ec.add(paths[currentPath][equivalenceConnections[i].second]);
     }
-
-    //if no generalisation possible, return early
-    SearchPath generalPath = searchPath;
-    if(ec.size() > 1)
-    {
-        bool existingECFound = false;
-        for(unsigned int i = 0; i < nodes.size(); i++)
-            if(nodes[i].type == LexiconTypes::EC)
-                if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0)
-                {
-                    existingECFound = true;
-                    ec = EquivalenceClass();
-                    generalPath[slotIndex] = i;
-                    break;
-                }
-
-         //construct temporary RDSGraph to represent rewiring of the EquivalenceClass
-        if(!existingECFound)
-        {
-            //RDSGraph tempGraph(*this);
-            //tempGraph.rewire(vector<Connection>(), new EquivalenceClass(ec));
-            //generalPath[slotIndex] = tempGraph.nodes.size() - 1;
-            //tempGraph.computeConnectionMatrix(connections, generalPath, range);
-            rewire(vector<Connection>(), new EquivalenceClass(ec));
-            generalPath[slotIndex] = nodes.size() - 1;
-            computeConnectionMatrix(connections, generalPath);
-            nodes.pop_back();
-            updateAllConnections();
-        }
-        else
-            computeConnectionMatrix(connections, generalPath);
-    }
-    else
-        computeConnectionMatrix(connections, generalPath);
-
-    return generalPath;
+    
+    return ec;
 }
 
 SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, double overlapThreshold) const
 {
     // find all possible connections
-    vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[0]);
-    equivalenceConnections = filterConnections(equivalenceConnections, searchPath.size()-1, searchPath(searchPath.size()-1, searchPath.size()-1));
+    vector<Connection> equivalenceConnections = filterConnections(getAllNodeConnections(searchPath[0]), searchPath.size()-1, searchPath(searchPath.size()-1, searchPath.size()-1));
 
     // find potential ECs
     bootstrapInfo.encounteredECs.clear();
@@ -727,36 +730,6 @@ void RDSGraph::updateAllConnections()
                 nodes[ec->at(j)].parents.push_back(Connection(i, 0));
         }
     }
-}
-
-bool RDSGraph::findRightDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const
-{
-    assert(range.first >= column);
-
-    for(unsigned int i = range.first; i <= range.second; i++)
-        if(descents(i, column) < eta)
-        {
-            std::cout << "searched for right descent in (" << range.first << ":" << i << ", " << column << ")" << endl;
-            descentRow = i;
-            return true;
-        }
-    std::cout << "searched for right descent in (" << range.first << ":" << range.second << ", " << column << ")" << endl;
-    return false;
-}
-
-bool RDSGraph::findLeftDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const
-{
-    assert(range.second <= column);
-
-    for(int i = range.second; i >= static_cast<int>(range.first); i--)
-        if(descents(i, column) < eta)
-        {
-            std::cout << "searching for left descent in (" << i << ":" << range.second << ", " << column << ")" << endl;
-            descentRow = i;
-            return true;
-        }
-    std::cout << "searching for left descent in (" << range.first << ":" << range.second << ", " << column << ")" << endl;
-    return false;
 }
 
 double RDSGraph::computeRightSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const pair<unsigned int, unsigned int> &descentPoint, double eta) const
@@ -998,3 +971,35 @@ void printInfo(const ConnectionMatrix &connections, const NRMatrix<double> &flow
     }
     std::cout << endl << endl << endl;
 }
+
+/*
+bool RDSGraph::findRightDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const
+{
+    assert(range.first >= column);
+
+    for(unsigned int i = range.first; i <= range.second; i++)
+        if(descents(i, column) < eta)
+        {
+            std::cout << "searched for right descent in (" << range.first << ":" << i << ", " << column << ")" << endl;
+            descentRow = i;
+            return true;
+        }
+    std::cout << "searched for right descent in (" << range.first << ":" << range.second << ", " << column << ")" << endl;
+    return false;
+}
+
+bool RDSGraph::findLeftDescentRow(unsigned int &descentRow, const NRMatrix<double> &descents, const Range &range, unsigned int column, double eta) const
+{
+    assert(range.second <= column);
+
+    for(int i = range.second; i >= static_cast<int>(range.first); i--)
+        if(descents(i, column) < eta)
+        {
+            std::cout << "searching for left descent in (" << i << ":" << range.second << ", " << column << ")" << endl;
+            descentRow = i;
+            return true;
+        }
+    std::cout << "searching for left descent in (" << range.first << ":" << range.second << ", " << column << ")" << endl;
+    return false;
+}
+*/
