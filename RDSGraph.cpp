@@ -154,6 +154,79 @@ bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
 
 bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &params)
 {
+    // some variables
+    vector<SearchPath> all_boosted_paths;
+    vector<SearchPath> all_general_paths;
+    vector<EquivalenceClass> all_general_ecs;
+    vector<Range> all_general_info;
+    vector<unsigned int> boost2general;
+
+    // initialise with just the search path with no bootstrapping or generalising
+    // make sure this is always tested for patterns. INCLUDE GENERALISATION OF INITIAL SEARCH PATH?
+    all_boosted_paths.push_back(searchPath);
+    all_general_paths.push_back(searchPath);
+    all_general_ecs.push_back(EquivalenceClass());
+    all_general_info.push_back(Range(0, 0));
+    boost2general.push_back(0);
+
+    // look for more potential search paths
+    for(unsigned int i = 0; (i+params.contextSize-1) < searchPath.size(); i++)
+    {
+        unsigned int start_index = all_general_paths.size();
+
+        // boostrapping the search path
+        BootstrapInfo bah;      // DELETE LATER
+        SearchPath boosted_part = bootstrap(bah, searchPath(i, i+params.contextSize-1), params.overlapThreshold);
+        SearchPath boosted_path = searchPath.substitute(i, i+params.contextSize-1, boosted_part);
+
+        // generalising the boosted path at selected slots, look for possible equivalent classes. INCLUDE JUST BOOSTRAPPED PATH WITHOUT GENERALISATION?
+        for(unsigned int j = 1; j < params.contextSize-1; j++)
+        {
+            EquivalenceClass ec = computeEquivalenceClass(boosted_part, j);
+            SearchPath general_path = boosted_path;
+
+            // test that the found equivalence class actually has more than one element
+            if(ec.size() > 1)
+                general_path[i+j] = findExistingEquivalenceClass(ec);
+
+            // if general_path is the same as the original search path, no need to test it
+            if(general_path == searchPath)
+                continue;
+
+            // if general_path is already one of the path found for this boosted path, no need to test it
+            bool repeated = false;
+            for(unsigned int k = start_index; k < all_general_paths.size(); k++)
+                if(general_path == all_general_paths[k])
+                {
+                    repeated = true;
+                    break;
+                }
+            if(repeated) continue;
+
+            // added the generalised path sto the list to be tested
+            all_general_paths.push_back(general_path);
+            all_general_ecs.push_back(ec);
+            all_general_info.push_back(Range(i, i+j));  // stores the start of the context and the slot that was generalised
+            boost2general.push_back(all_boosted_paths.size());
+
+        }
+
+        // only add the boosted path if some generalised paths were found.
+        if(all_general_paths.size() > start_index)
+            all_boosted_paths.push_back(boosted_path);
+    }
+
+
+
+    for(unsigned int i = 0; i < all_general_paths.size(); i++)
+        std::cout << all_general_paths[i] << endl;
+exit(1);
+    return true;
+}
+
+/*
+bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &params)
+{
     // Significant Pattern Info
     bool patternFound = false;
     BootstrapInfo bestBootstrapInfo;
@@ -248,7 +321,7 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
 
     return patternFound;
 }
-
+*/
 bool RDSGraph::bootstrapStage(SignificantPatternInfo &bestPatternInfo, EquivalenceClassInfo &bestECInfo, const SearchPath &searchPath, const ADIOSParams &params, const Range &context, SearchPathInfo &searchPathInfo)
 {
     bool patternFound = false;
@@ -314,7 +387,7 @@ bool RDSGraph::bootstrapStage(SignificantPatternInfo &bestPatternInfo, Equivalen
                 continue;
             else
                 searchPathInfo.alreadyTested = true;
-
+//std::cout << endl << generalPath << endl;
         // find best pattern and ec so far
         //std::cout << "------------- " << generalPath << endl;
         //std::cout << "Slot " << i << endl;
@@ -856,6 +929,16 @@ vector<Connection> RDSGraph::getAllNodeConnections(unsigned int nodeIndex) const
     }
 
     return connections;
+}
+
+unsigned int RDSGraph::findExistingEquivalenceClass(const EquivalenceClass &ec)
+{
+    for(unsigned int i = 0; i < nodes.size(); i++)
+        if(nodes[i].type == LexiconTypes::EC)
+            if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0)
+                return i;
+
+    return nodes.size();
 }
 
 string RDSGraph::printSignificantPattern(const SignificantPattern &sp) const

@@ -64,6 +64,7 @@ class RDSGraph: public Stringable
 
         std::vector<Connection> filterConnections(const std::vector<Connection> &init_cons, unsigned int start_offset, const SearchPath &search_path) const;
         std::vector<Connection> getAllNodeConnections(unsigned int nodeIndex) const;
+        unsigned int findExistingEquivalenceClass(const EquivalenceClass &ec);
 
         // print functions
         std::string printSignificantPattern(const SignificantPattern &sp) const;
