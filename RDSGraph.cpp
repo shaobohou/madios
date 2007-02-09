@@ -154,40 +154,56 @@ bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
 
 bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &params)
 {
-    // some variables
+    // BOOTSTRAPPING STAGE
+    // bootstrapping variables
+    vector<Range> all_boosted_contexts;
     vector<SearchPath> all_boosted_paths;
-    vector<SearchPath> all_general_paths;
-    vector<EquivalenceClass> all_general_ecs;
-    vector<Range> all_general_info;
-    vector<unsigned int> boost2general;
 
-    // initialise with just the search path with no bootstrapping or generalising
-    // make sure this is always tested for patterns. INCLUDE GENERALISATION OF INITIAL SEARCH PATH?
+    // initialise with just the search path with no bootstrapping
+    all_boosted_contexts.push_back(Range(0, 0));
     all_boosted_paths.push_back(searchPath);
-    all_general_paths.push_back(searchPath);
-    all_general_ecs.push_back(EquivalenceClass());
-    all_general_info.push_back(Range(0, 0));
-    boost2general.push_back(0);
 
-    // look for more potential search paths
+    // get all boosted paths
+    BootstrapInfo bah;      // DELETE LATER
     for(unsigned int i = 0; (i+params.contextSize-1) < searchPath.size(); i++)
     {
-        unsigned int start_index = all_general_paths.size();
-
-        // boostrapping the search path
-        BootstrapInfo bah;      // DELETE LATER
         SearchPath boosted_part = bootstrap(bah, searchPath(i, i+params.contextSize-1), params.overlapThreshold);
         SearchPath boosted_path = searchPath.substitute(i, i+params.contextSize-1, boosted_part);
+        all_boosted_paths.push_back(boosted_path);
+    }
 
-        // generalising the boosted path at selected slots, look for possible equivalent classes. INCLUDE JUST BOOSTRAPPED PATH WITHOUT GENERALISATION?
+
+
+    // GENERALISATION STAGE
+    // generalisation variables
+    vector<unsigned int> boost2general;
+    vector<unsigned int> all_general_slots;
+    vector<SearchPath> all_general_paths;
+    vector<EquivalenceClass> all_general_ecs;
+
+    // initialise with just the search path with no generalisation
+    boost2general.push_back(0);
+    all_general_slots.push_back(0);
+    all_general_paths.push_back(searchPath);
+    all_general_ecs.push_back(EquivalenceClass());
+
+    // get all generalised paths
+    for(unsigned int i = 1; all_boosted_paths.size(); i++)
+    {
+        unsigned int context_start = all_boosted_contexts[i].first;
+        unsigned int context_finish = all_boosted_contexts[i].second;
+        SearchPath boosted_part = all_boosted_paths[i](context_start, context_finish);
+
+        // try all the possible slots
+        unsigned int start_index = all_general_paths.size();
         for(unsigned int j = 1; j < params.contextSize-1; j++)
         {
             EquivalenceClass ec = computeEquivalenceClass(boosted_part, j);
-            SearchPath general_path = boosted_path;
 
             // test that the found equivalence class actually has more than one element
+            SearchPath general_path = all_boosted_path[i];
             if(ec.size() > 1)
-                general_path[i+j] = findExistingEquivalenceClass(ec);
+                general_path[context_start+j] = findExistingEquivalenceClass(ec);
 
             // if general_path is the same as the original search path, no need to test it
             if(general_path == searchPath)
@@ -204,16 +220,106 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
             if(repeated) continue;
 
             // added the generalised path sto the list to be tested
+            boost2general.push_back(i);  // add the boosted path number corresponding to the general path
+            all_general_slots.push_back(context_start+j);  // stores the slot that was generalised
             all_general_paths.push_back(general_path);
             all_general_ecs.push_back(ec);
-            all_general_info.push_back(Range(i, i+j));  // stores the start of the context and the slot that was generalised
-            boost2general.push_back(all_boosted_paths.size());
+        }
+    }
+
+
+
+    // DISTILLATION STAGE
+    // significant pattern variables
+    vector<Range> all_patterns;
+    vector<SignificancePair> all_pvalues;
+    vector<unsigned int> pattern2general;
+
+    // test each path for significant patterns;
+    for(unsigned int i = 0; i < all_general_paths.size(); i++)
+    {
+        ConnectionMatrix connections;
+        unsigned int slotIndex = all_general_slots[i];
+        if(all_general_paths[i][slotIndex] >= nodes.size()) // if a new EC is expected, temporarily rewire the RDSGraph
+        {
+            //RDSGraph tempGraph(*this);
+            //tempGraph.rewire(vector<Connection>(), new EquivalenceClass(ec));
+            //tempGraph.computeConnectionMatrix(connections, generalPath, range);
+
+            rewire(vector<Connection>(), &(all_general_ecs[i]));
+            computeConnectionMatrix(connections, all_general_paths[i]);
+            nodes.pop_back();
+            updateAllConnections();
+        }
+        else
+            computeConnectionMatrix(connections, all_general_paths[i]);
+
+        // compute flows and descents matrix from connection matrix
+        computeDescentsMatrix(flows, descents, connections);
+
+        // look for significant patterns
+        vector<Range> some_patterns;
+        vector<SignificancePair> some_pvalues;
+        if(!findSignificantPatterns(some_patterns, some_pvalues, connections, flows, descents, params.eta, params.alpha))
+            continue;
+
+        // add them to the list
+        for(unsigned int j = 0; j < some_patterns.size(); j++)
+        {
+            all_patterns.push_back(some_patterns[j]);
+            all_pvalues.push_back(some_pvalues[j]);
+            pattern2general.push_back(i);
+        }
+    }
+
+
+
+    // LOOK FOR MOST SIGNIFICANT PATTERNS
+    bool best_pattern_found = false;
+    unsigned int best_pattern_index = all_patterns.size();
+    for(unsigned int i = 0; i < all_patterns.size(); i++)
+    {
+        // only proceed if the current pattern is the first of patterns found by distillation on the general path. DELETE LATER?
+        if((i != 0) && (pattern2general[i] == pattern2general[i-1]))
+            continue;
+
+        if((!best_pattern_found) || (all_pvalues[i] < best_pvalue))
+        {
+            best_pattern_found = true;
+            best_pattern_index = i;
+        }
+    }
+    assert(best_pattern_index < all_patterns.size());
+
+    // get alll the information about the best pattern
+    Range best_pattern = best_patterns[best_pattern_index];
+    SignificancePair best_pvalues = best_pvalues[best_pattern_index];
+
+    unsigned int best_general_path_index = pattern2general[best_pattern_index];
+    SearchPath best_path = all_general_paths[best_general_path_index];
+    unsigned int best_slot = all_general_slots[best_general_path_index];
+    EquivalenceClass best_ec = all_general_ecs[best_general_path_index];
+
+    unsigned int best_boosted_path_index = general2boost[best_general_path_index];
+    Range best_context = all_boosted_cotexts[best_boosted_path_index];
+
+
+
+    // REWIRING STAGE
+    unsigned int old_num_nodes = nodes.size();
+    unsigned int search_start = max(best_pattern.first, best_context.first);
+    unsigned int search_finish = min(best_pattern.second, best_context.second);
+    for(unsigned int i = search_start; i = search_finish; i++)
+    {
+        if(best_path[i] == old_num_nodes)
+        {
+            best_path[i] = nodes.size();
+            rewire(vector<Connection>(), new EquivalenceClass(best_ec));
+        }
+        else
+        {
 
         }
-
-        // only add the boosted path if some generalised paths were found.
-        if(all_general_paths.size() > start_index)
-            all_boosted_paths.push_back(boosted_path);
     }
 
 
@@ -932,10 +1038,10 @@ vector<Connection> RDSGraph::getAllNodeConnections(unsigned int nodeIndex) const
 }
 
 unsigned int RDSGraph::findExistingEquivalenceClass(const EquivalenceClass &ec)
-{
+{   // should look for the EC with the biggest overlap
     for(unsigned int i = 0; i < nodes.size(); i++)
         if(nodes[i].type == LexiconTypes::EC)
-            if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0)
+            if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0) // shouldn't this be the supplied threshold
                 return i;
 
     return nodes.size();
