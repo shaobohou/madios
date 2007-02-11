@@ -243,20 +243,17 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     vector<unsigned int> pattern2general;
 
     // test each path for significant patterns;
+    RDSGraph temp_graph(*this);
     for(unsigned int i = 0; i < all_general_paths.size(); i++)
     {
         ConnectionMatrix connections;
         unsigned int slotIndex = all_general_slots[i];
         if(all_general_paths[i][slotIndex] >= nodes.size()) // if a new EC is expected, temporarily rewire the RDSGraph
         {
-            //RDSGraph tempGraph(*this);
-            //tempGraph.rewire(vector<Connection>(), new EquivalenceClass(ec));
-            //tempGraph.computeConnectionMatrix(connections, generalPath, range);
-
-            rewire(vector<Connection>(), new EquivalenceClass(all_general_ecs[i])); // MEMEORY LEAK HERE
-            computeConnectionMatrix(connections, all_general_paths[i]);
-            nodes.pop_back();
-            updateAllConnections();
+            temp_graph.rewire(vector<Connection>(), new EquivalenceClass(all_general_ecs[i]));
+            temp_graph.computeConnectionMatrix(connections, all_general_paths[i]);
+            temp_graph.nodes.pop_back();
+            temp_graph.updateAllConnections();
         }
         else
             computeConnectionMatrix(connections, all_general_paths[i]);
