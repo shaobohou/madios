@@ -300,7 +300,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
 
     unsigned int best_general_index = pattern2general[best_pattern_index];
     SearchPath best_path = all_general_paths[best_general_index];
-    unsigned int best_slot = all_general_slots[best_general_index];
+    //unsigned int best_slot = all_general_slots[best_general_index];
     EquivalenceClass best_ec = all_general_ecs[best_general_index];
 
     unsigned int best_boosted_index = general2boost[best_general_index];
@@ -327,7 +327,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             EquivalenceClass *best_exisiting_ec = static_cast<EquivalenceClass *>(nodes[best_path[i]].lexicon);
             EquivalenceClass overlap_ec = best_encountered_ecs[local_slot].computeOverlapEC(*best_exisiting_ec);
             double overlap_ratio = overlap_ec.size() / best_exisiting_ec->size();
-            
+
             if(overlap_ratio < 1.0)            // true if the overlap with existing EC is less than 1.0, only use the subset that overlaps with it
             {
                 std::cout << "NEW OVERLAP EC USED: E[" << printEquivalenceClass(overlap_ec) << "]" << endl;
