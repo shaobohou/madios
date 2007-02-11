@@ -21,7 +21,7 @@ class RDSGraph: public Stringable
         explicit RDSGraph(const std::vector<std::vector<std::string> > &sequences);
 
         std::vector<std::string> generate() const;
-        std::vector<std::string> generate(const SearchPath &searchPath) const;
+        std::vector<std::string> generate(const SearchPath &search_path) const;
         std::vector<std::string> generate(unsigned int node) const;
         void distill(const ADIOSParams &params);
 
@@ -33,15 +33,15 @@ class RDSGraph: public Stringable
         std::vector<RDSNode> nodes;
 
         void buildInitialGraph(const std::vector<std::vector<std::string> > &sequences);
-        bool distill(const SearchPath &searchPath, const ADIOSParams &params);
-        bool generalise(const SearchPath &searchPath, const ADIOSParams &params);
+        bool distill(const SearchPath &search_path, const ADIOSParams &params);
+        bool generalise(const SearchPath &search_path, const ADIOSParams &params);
 
         // generalise and bootstrap
-        EquivalenceClass computeEquivalenceClass(const SearchPath &searchPath, unsigned int slotIndex);
-        SearchPath bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, double overlapThreshold) const;
+        EquivalenceClass computeEquivalenceClass(const SearchPath &search_path, unsigned int slotIndex);
+        SearchPath bootstrap(std::vector<EquivalenceClass> &encountered_ecs, const SearchPath &search_path, double overlapThreshold) const;
 
         // compute matrix and pattern searching function
-        void computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath) const;
+        void computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &search_path) const;
         void computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections) const;
         bool findSignificantPatterns(std::vector<Range> &patterns, std::vector<SignificancePair> &pvalues, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, double eta, double alpha) const;
 

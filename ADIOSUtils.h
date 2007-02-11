@@ -18,15 +18,6 @@ class ADIOSParams
         ADIOSParams(double eta, double alpha, unsigned int contextSize, double overlapThreshold);
 };
 
-class BootstrapInfo
-{
-    public:
-        std::vector<EquivalenceClass> encounteredECs;
-        std::vector<unsigned int> overlapECs;
-        std::vector<double> overlapRatios;
-        Range context;
-};
-
 namespace LexiconTypes
 {
 enum LexiconEnum

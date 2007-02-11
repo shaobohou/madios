@@ -166,16 +166,14 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     all_encountered_ecs.push_back(vector<EquivalenceClass>(max(static_cast<unsigned int>(0), params.contextSize-2)));
 
     // get all boosted paths
-    BootstrapInfo bah;      // DELETE LATER
     for(unsigned int i = 0; (i+params.contextSize-1) < search_path.size(); i++)
     {
         Range context(i, i+params.contextSize-1);
-        //all_encountered_ecs.push_back(vector<EquivalenceClass>());
-        SearchPath boosted_part = bootstrap(bah, search_path(context.first, context.second), params.overlapThreshold);
+        all_encountered_ecs.push_back(vector<EquivalenceClass>());
+        SearchPath boosted_part = bootstrap(all_encountered_ecs.back(), search_path(context.first, context.second), params.overlapThreshold);
         SearchPath boosted_path = search_path.substitute(context.first, context.second, boosted_part);
         all_boosted_contexts.push_back(context);
         all_boosted_paths.push_back(boosted_path);
-        all_encountered_ecs.push_back(bah.encounteredECs);
     }
 
 
@@ -455,47 +453,47 @@ EquivalenceClass RDSGraph::computeEquivalenceClass(const SearchPath &searchPath,
     return ec;
 }
 
-SearchPath RDSGraph::bootstrap(BootstrapInfo &bootstrapInfo, const SearchPath &searchPath, double overlapThreshold) const
+SearchPath RDSGraph::bootstrap(vector<EquivalenceClass> &encountered_ecs, const SearchPath &search_path, double overlapThreshold) const
 {
     // find all possible connections
-    vector<Connection> equivalenceConnections = filterConnections(getAllNodeConnections(searchPath[0]), searchPath.size()-1, searchPath(searchPath.size()-1, searchPath.size()-1));
+    vector<Connection> equivalenceConnections = filterConnections(getAllNodeConnections(search_path[0]), search_path.size()-1, search_path(search_path.size()-1, search_path.size()-1));
 
     // find potential ECs
-    bootstrapInfo.encounteredECs.clear();
-    for(unsigned int i = 1; i < searchPath.size()-1; i++)
+    encountered_ecs.clear();
+    for(unsigned int i = 1; i < search_path.size()-1; i++)
     {
-        bootstrapInfo.encounteredECs.push_back(EquivalenceClass());
+        encountered_ecs.push_back(EquivalenceClass());
         for(unsigned int j = 0; j < equivalenceConnections.size(); j++)
         {
             unsigned int currentPath = equivalenceConnections[j].first;
             unsigned int currentStart = equivalenceConnections[j].second;
 
-            bootstrapInfo.encounteredECs.back().add(paths[currentPath][currentStart+i]);
+            encountered_ecs.back().add(paths[currentPath][currentStart+i]);
         }
     }
 
     // init bootstrap data
-    bootstrapInfo.overlapECs = searchPath(1, searchPath.size()-2);
-    bootstrapInfo.overlapRatios = vector<double>(searchPath.size()-2, 0.0);
+    vector<unsigned int> overlap_ecs = search_path(1, search_path.size()-2);
+    vector<double> overlap_ratios(search_path.size()-2, 0.0);
 
     // bootstrap search path
-    SearchPath bootstrapPath = searchPath;
-    for(unsigned int i = 0; i < bootstrapInfo.encounteredECs.size(); i++)
+    SearchPath bootstrap_path = search_path;
+    for(unsigned int i = 0; i < encountered_ecs.size(); i++)
     {
         for(unsigned int j = 0; j < nodes.size(); j++)
             if(nodes[j].type == LexiconTypes::EC)
             {
-                double overlap = bootstrapInfo.encounteredECs[i].computeOverlapRatio(*static_cast<EquivalenceClass *>(nodes[j].lexicon));
-                if((overlap > bootstrapInfo.overlapRatios[i]) && (overlap > overlapThreshold))
+                double overlap = encountered_ecs[i].computeOverlapRatio(*static_cast<EquivalenceClass *>(nodes[j].lexicon));
+                if((overlap > overlap_ratios[i]) && (overlap > overlapThreshold))
                 {
-                    bootstrapInfo.overlapECs[i] = j;
-                    bootstrapInfo.overlapRatios[i] = overlap;
+                    overlap_ecs[i] = j;
+                    overlap_ratios[i] = overlap;
                 }
             }
-        bootstrapPath[i + 1] = bootstrapInfo.overlapECs[i];
+        bootstrap_path[i + 1] = overlap_ecs[i];
     }
 
-    return bootstrapPath;
+    return bootstrap_path;
 }
 
 void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections) const
