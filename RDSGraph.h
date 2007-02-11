@@ -10,8 +10,6 @@
 #include <string>
 #include <sstream>
 
-// code still too messy
-
 // true, if both pvalues are less than alpha
 bool isPatternSignificant(const SignificancePair &pvalues, double alpha);
 bool operator<(const SignificancePair &a, const SignificancePair &b);
@@ -37,8 +35,6 @@ class RDSGraph: public Stringable
         void buildInitialGraph(const std::vector<std::vector<std::string> > &sequences);
         bool distill(const SearchPath &searchPath, const ADIOSParams &params);
         bool generalise(const SearchPath &searchPath, const ADIOSParams &params);
-        bool bootstrapStage(SignificantPatternInfo &bestPatternInfo, EquivalenceClassInfo &bestECInfo, const SearchPath &searchPath, const ADIOSParams &params, const Range &context, SearchPathInfo &searchPathInfo);
-        bool generalisationStage(SignificantPatternInfo &bestPatternInfo, const SearchPath &searchPath, const ADIOSParams &params, const ConnectionMatrix &connections);
 
         // generalise and bootstrap
         EquivalenceClass computeEquivalenceClass(const SearchPath &searchPath, unsigned int slotIndex);

@@ -27,29 +27,6 @@ class BootstrapInfo
         Range context;
 };
 
-class SignificantPatternInfo
-{
-    public:
-        Range patternRange;
-        SignificancePair pvalues;
-        SignificantPattern pattern;
-        std::vector<Connection> connections;
-};
-
-class EquivalenceClassInfo
-{
-    public:
-        unsigned int slot;
-        EquivalenceClass ec;
-};
-
-class SearchPathInfo
-{
-    public:
-        SearchPath searchPath;
-        bool alreadyTested;
-};
-
 namespace LexiconTypes
 {
 enum LexiconEnum
