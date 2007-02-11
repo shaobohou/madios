@@ -824,10 +824,10 @@ vector<Connection> RDSGraph::getAllNodeConnections(unsigned int nodeIndex) const
 }
 
 unsigned int RDSGraph::findExistingEquivalenceClass(const EquivalenceClass &ec)
-{   // should look for the EC with the biggest overlap
+{   // look for the existing ec that is a subset of the given ec
     for(unsigned int i = 0; i < nodes.size(); i++)
         if(nodes[i].type == LexiconTypes::EC)
-            if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0) // shouldn't this be the supplied threshold
+            if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0)
                 return i;
 
     return nodes.size();
