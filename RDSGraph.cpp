@@ -163,6 +163,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     // initialise with just the search path with no bootstrapping
     all_boosted_contexts.push_back(Range(0, 0));
     all_boosted_paths.push_back(search_path);
+    all_encountered_ecs.push_back(vector<EquivalenceClass>(max(static_cast<unsigned int>(0), params.contextSize-2)));
 
     // get all boosted paths
     BootstrapInfo bah;      // DELETE LATER
@@ -231,7 +232,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             all_general_ecs.push_back(ec);
         }
     }
-    std::cout << all_general_paths.size() << " general paths tested" << endl;
+    std::cout << all_general_paths.size() << " paths tested" << endl;
 
 
 
@@ -324,7 +325,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             rewire(vector<Connection>(), new EquivalenceClass(best_ec));
         }
         else if(best_path[i] != search_path[i]) // true if the part of the context was boosted from existing ECs
-        {std::cout << old_num_nodes << "   " << i << "   " << best_path[i] << endl;
+        {
             unsigned int local_slot = i - (best_context.first + 1);
             EquivalenceClass *best_exisiting_ec = static_cast<EquivalenceClass *>(nodes[best_path[i]].lexicon);
             EquivalenceClass overlap_ec = best_encountered_ecs[local_slot].computeOverlapEC(*best_exisiting_ec);
