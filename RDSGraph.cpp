@@ -152,26 +152,29 @@ bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
     return true;
 }
 
-bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &params)
+bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &params)
 {
     // BOOTSTRAPPING STAGE
     // bootstrapping variables
     vector<Range> all_boosted_contexts;
     vector<SearchPath> all_boosted_paths;
+    vector<vector<EquivalenceClass> > all_encountered_ecs;
 
     // initialise with just the search path with no bootstrapping
     all_boosted_contexts.push_back(Range(0, 0));
-    all_boosted_paths.push_back(searchPath);
+    all_boosted_paths.push_back(search_path);
 
     // get all boosted paths
     BootstrapInfo bah;      // DELETE LATER
-    for(unsigned int i = 0; (i+params.contextSize-1) < searchPath.size(); i++)
+    for(unsigned int i = 0; (i+params.contextSize-1) < search_path.size(); i++)
     {
         Range context(i, i+params.contextSize-1);
-        SearchPath boosted_part = bootstrap(bah, searchPath(context.first, context.second), params.overlapThreshold);
-        SearchPath boosted_path = searchPath.substitute(context.first, context.second, boosted_part);
+        //all_encountered_ecs.push_back(vector<EquivalenceClass>());
+        SearchPath boosted_part = bootstrap(bah, search_path(context.first, context.second), params.overlapThreshold);
+        SearchPath boosted_path = search_path.substitute(context.first, context.second, boosted_part);
         all_boosted_contexts.push_back(context);
         all_boosted_paths.push_back(boosted_path);
+        all_encountered_ecs.push_back(bah.encounteredECs);
     }
 
 
@@ -186,7 +189,7 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
     // initialise with just the search path with no generalisation
     general2boost.push_back(0);
     all_general_slots.push_back(0);
-    all_general_paths.push_back(searchPath);
+    all_general_paths.push_back(search_path);
     all_general_ecs.push_back(EquivalenceClass());
 
     // get all generalised paths
@@ -204,11 +207,11 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
 
             // test that the found equivalence class actually has more than one element
             SearchPath general_path = all_boosted_paths[i];
-            if(ec.size() > 1)
+            if(ec.size() > 1)   // check if found equivalence class is very similar to an existing EC, need to double check
                 general_path[context_start+j] = findExistingEquivalenceClass(ec);
 
             // if general_path is the same as the original search path, no need to test it
-            if(general_path == searchPath)
+            if(general_path == search_path)
                 continue;
 
             // if general_path is already one of the path found for this boosted path, no need to test it
@@ -228,6 +231,7 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
             all_general_ecs.push_back(ec);
         }
     }
+    std::cout << all_general_paths.size() << " general paths tested" << endl;
 
 
 
@@ -287,44 +291,70 @@ bool RDSGraph::generalise(const SearchPath &searchPath, const ADIOSParams &param
             best_pattern_found = true;
             best_pattern_index = i;
         }
+    if(!best_pattern_found)
+        return false;
     assert(best_pattern_index < all_patterns.size());
+    std::cout << all_patterns.size() << " patterns found" << endl;
 
     // get alll the information about the best pattern
     Range best_pattern = all_patterns[best_pattern_index];
     SignificancePair best_pvalues = all_pvalues[best_pattern_index];
 
-    unsigned int best_general_path_index = pattern2general[best_pattern_index];
-    SearchPath best_path = all_general_paths[best_general_path_index];
-    unsigned int best_slot = all_general_slots[best_general_path_index];
-    EquivalenceClass best_ec = all_general_ecs[best_general_path_index];
+    unsigned int best_general_index = pattern2general[best_pattern_index];
+    SearchPath best_path = all_general_paths[best_general_index];
+    unsigned int best_slot = all_general_slots[best_general_index];
+    EquivalenceClass best_ec = all_general_ecs[best_general_index];
 
-    unsigned int best_boosted_path_index = general2boost[best_general_path_index];
-    Range best_context = all_boosted_contexts[best_boosted_path_index];
+    unsigned int best_boosted_index = general2boost[best_general_index];
+    Range best_context = all_boosted_contexts[best_boosted_index];
+    vector<EquivalenceClass> best_encountered_ecs = all_encountered_ecs[best_boosted_index];
 
 
 
     // REWIRING STAGE
+    std::cout << "STARTS REWIRING" << endl;
     unsigned int old_num_nodes = nodes.size();
     unsigned int search_start = max(best_pattern.first, best_context.first);
     unsigned int search_finish = min(best_pattern.second, best_context.second);
     for(unsigned int i = search_start; i <= search_finish; i++)
     {
-        if(best_path[i] == old_num_nodes)
+        if(best_path[i] >= old_num_nodes)       // true if a new EC was discovered at the specific slot
         {
             best_path[i] = nodes.size();
             rewire(vector<Connection>(), new EquivalenceClass(best_ec));
         }
-        else
-        {
-
+        else if(best_path[i] != search_path[i]) // true if the part of the context was boosted from existing ECs
+        {std::cout << old_num_nodes << "   " << i << "   " << best_path[i] << endl;
+            unsigned int local_slot = i - (best_context.first + 1);
+            EquivalenceClass *best_exisiting_ec = static_cast<EquivalenceClass *>(nodes[best_path[i]].lexicon);
+            EquivalenceClass overlap_ec = best_encountered_ecs[local_slot].computeOverlapEC(*best_exisiting_ec);
+            double overlap_ratio = overlap_ec.size() / best_exisiting_ec->size();
+            
+            if(overlap_ratio < 1.0)            // true if the overlap with existing EC is less than 1.0, only use the subset that overlaps with it
+            {
+                std::cout << "NEW OVERLAP EC USED: E[" << printEquivalenceClass(overlap_ec) << "]" << endl;
+                best_path[i] = nodes.size();
+                rewire(vector<Connection>(), new EquivalenceClass(overlap_ec));
+            }
+            else
+            {
+                std::cout << "OLD OVERLAP EC USED: E[" << printNode(best_path[i]) << "]" << endl;
+                rewire(vector<Connection>(), best_path[i]);
+            }
         }
     }
+    ConnectionMatrix best_connections;
+    computeConnectionMatrix(best_connections, best_path);
+    vector<Connection> best_pattern_connections = getRewirableConnections(best_connections, best_pattern, params.alpha);
+    rewire(best_pattern_connections , new SignificantPattern(best_path(best_pattern.first, best_pattern.second)));
+    std::cout << best_pattern_connections .size() << " occurences rewired" << endl;
+    std::cout << "ENDS REWIRING" << endl;
 
 
-
+/*
     for(unsigned int i = 0; i < all_general_paths.size(); i++)
         std::cout << all_general_paths[i] << endl;
-exit(1);
+exit(1);*/
     return true;
 }
 

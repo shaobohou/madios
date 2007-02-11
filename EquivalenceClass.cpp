@@ -19,7 +19,7 @@ EquivalenceClass::~EquivalenceClass()
 {
 }
 
-EquivalenceClass EquivalenceClass::getOverlapEC(const EquivalenceClass &other) const
+EquivalenceClass EquivalenceClass::computeOverlapEC(const EquivalenceClass &other) const
 {
     EquivalenceClass overlap;
     for(unsigned int i = 0; i < size(); i++)
@@ -32,7 +32,7 @@ EquivalenceClass EquivalenceClass::getOverlapEC(const EquivalenceClass &other) c
 
 double EquivalenceClass::computeOverlapRatio(const EquivalenceClass &other) const
 {
-    return static_cast<double>(getOverlapEC(other).size()) / other.size();
+    return static_cast<double>(computeOverlapEC(other).size()) / other.size();
 }
 
 bool EquivalenceClass::operator==(const EquivalenceClass &other) const

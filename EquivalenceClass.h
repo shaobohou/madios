@@ -14,7 +14,7 @@ class EquivalenceClass: public LexiconUnit, public std::vector<unsigned int>
         explicit EquivalenceClass(const std::vector<unsigned int> &units);
         virtual ~EquivalenceClass();
 
-        EquivalenceClass getOverlapEC(const EquivalenceClass &other) const;
+        EquivalenceClass computeOverlapEC(const EquivalenceClass &other) const;
         double computeOverlapRatio(const EquivalenceClass &other) const;
         bool operator==(const EquivalenceClass &other) const;
         bool has(unsigned int unit) const;
