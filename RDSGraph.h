@@ -5,7 +5,7 @@
 #include "ADIOSUtils.h"
 #include "global.h"
 #include "MiscUtils.h"
-//#include "ParseTree.h"
+#include "ParseTree.h"
 
 #include <string>
 #include <sstream>
@@ -30,6 +30,7 @@ class RDSGraph: public Stringable
     private:
         unsigned int corpusSize;
         std::vector<SearchPath> paths;
+        std::vector<ParseTree<unsigned int> > trees;
         std::vector<RDSNode> nodes;
 
         void buildInitialGraph(const std::vector<std::vector<std::string> > &sequences);

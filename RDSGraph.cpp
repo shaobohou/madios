@@ -71,6 +71,8 @@ void RDSGraph::distill(const ADIOSParams &params)
         if(!foundPattern)
             break;
     }
+
+    trees[0].print(0, 0);
 }
 
 vector<string> RDSGraph::generate() const
@@ -346,7 +348,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     ConnectionMatrix best_connections;
     computeConnectionMatrix(best_connections, best_path);
     vector<Connection> best_pattern_connections = getRewirableConnections(best_connections, best_pattern, params.alpha);
-    rewire(best_pattern_connections , new SignificantPattern(best_path(best_pattern.first, best_pattern.second)));
+    rewire(best_pattern_connections, new SignificantPattern(best_path(best_pattern.first, best_pattern.second)));
     std::cout << best_pattern_connections .size() << " occurences rewired" << endl;
     std::cout << "ENDS REWIRING" << endl;
 
@@ -413,6 +415,10 @@ void RDSGraph::buildInitialGraph(const vector<vector<string> > &sequences)
     }
 
     updateAllConnections();
+
+    // create initial parse trees
+    for(unsigned int i = 0; i < paths.size(); i++)
+        trees.push_back(ParseTree<unsigned int>(paths[i]));
 }
 
 void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &search_path) const
@@ -629,6 +635,7 @@ void RDSGraph::rewire(const vector<Connection> &connections, EquivalenceClass *e
 void RDSGraph::rewire(const vector<Connection> &connections, SignificantPattern *pattern)
 {
     nodes.push_back(RDSNode(pattern, LexiconTypes::SP));
+    pattern = static_cast<SignificantPattern*>(nodes.back().lexicon);   // pattern was released during insertion into nodes
 
     assert(connections.size() > 0);
     unsigned int pattern_size = pattern->size();
@@ -686,6 +693,15 @@ void RDSGraph::rewire(const vector<Connection> &connections, SignificantPattern 
     {
         unsigned int path_index = valid_connections[i].first;
         unsigned int path_pos = valid_connections[i].second;
+
+        // rewiring the parse trees
+        SearchPath segment(paths[path_index](path_pos, path_pos+pattern_size-1));
+        for(unsigned int j = 0; j < segment.size(); j++)
+            if(segment[j] != (*pattern)[j])
+                trees[path_index].rewire(path_pos+j, path_pos+j, (*pattern)[j]);
+        trees[path_index].rewire(path_pos, path_pos+pattern_size-1, nodes.size()-1);
+
+        // rewiring the paths
         paths[path_index].rewire(path_pos, path_pos+pattern_size-1, nodes.size()-1);
     }
 
