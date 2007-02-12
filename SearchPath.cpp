@@ -31,24 +31,30 @@ bool SearchPath::operator==(const SearchPath &other) const
     return true;
 }
 
-SearchPath SearchPath::operator()(unsigned int start, unsigned int finish) const
+void SearchPath::rewire(unsigned int start, unsigned int finish, unsigned int node)
+{
+    erase( begin()+start, begin()+finish+1);
+    insert(begin()+start, node);
+}
+
+vector<unsigned int> SearchPath::operator()(unsigned int start, unsigned int finish) const
 {
     assert(start <= finish);
     assert(finish< size());
 
-    return SearchPath(vector<unsigned int>(begin() + start, begin() + finish + 1));
+    return vector<unsigned int>(begin() + start, begin() + finish + 1);
 }
 
-SearchPath SearchPath::substitute(unsigned int start, unsigned int finish, const SearchPath &segment) const
+vector<unsigned int> SearchPath::substitute(unsigned int start, unsigned int finish, const vector<unsigned int> &segment) const
 {
     assert(start <= finish);
     assert(finish < size());
 
-    SearchPath newPath(vector<unsigned int>(begin(), begin()+start));
-    newPath.insert(newPath.end(), segment.begin(), segment.end());
-    newPath.insert(newPath.end(), begin()+finish+1, end());
+    vector<unsigned int> new_path(begin(), begin()+start);
+    new_path.insert(new_path.end(), segment.begin(), segment.end());
+    new_path.insert(new_path.end(), begin()+finish+1, end());
 
-    return newPath;
+    return new_path;
 }
 
 string SearchPath::toString() const

@@ -170,8 +170,8 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     {
         Range context(i, i+params.contextSize-1);
         all_encountered_ecs.push_back(vector<EquivalenceClass>());
-        SearchPath boosted_part = bootstrap(all_encountered_ecs.back(), search_path(context.first, context.second), params.overlapThreshold);
-        SearchPath boosted_path = search_path.substitute(context.first, context.second, boosted_part);
+        SearchPath boosted_part = bootstrap(all_encountered_ecs.back(), SearchPath(search_path(context.first, context.second)), params.overlapThreshold);
+        SearchPath boosted_path(search_path.substitute(context.first, context.second, boosted_part));
         all_boosted_contexts.push_back(context);
         all_boosted_paths.push_back(boosted_path);
     }
@@ -196,7 +196,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     {
         unsigned int context_start = all_boosted_contexts[i].first;
         unsigned int context_finish = all_boosted_contexts[i].second;
-        SearchPath boosted_part = all_boosted_paths[i](context_start, context_finish);
+        SearchPath boosted_part(all_boosted_paths[i](context_start, context_finish));
 
         // try all the possible slots
         unsigned int start_index = all_general_paths.size();
@@ -302,7 +302,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
 
     unsigned int best_general_index = pattern2general[best_pattern_index];
     SearchPath best_path = all_general_paths[best_general_index];
-    unsigned int best_slot = all_general_slots[best_general_index];
+    //unsigned int best_slot = all_general_slots[best_general_index];
     EquivalenceClass best_ec = all_general_ecs[best_general_index];
 
     unsigned int best_boosted_index = general2boost[best_general_index];
@@ -427,7 +427,7 @@ void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const Sear
         // compute the column from the diagonal
         for(unsigned int j = i + 1; j < dim; j++)
         {
-            connections(j, i) = filterConnections(connections(j - 1, i), j-i, search_path(j, j));
+            connections(j, i) = filterConnections(connections(j - 1, i), j-i, SearchPath(search_path(j, j)));
             connections(i, j) = connections(j, i);
         }
     }
@@ -440,8 +440,8 @@ EquivalenceClass RDSGraph::computeEquivalenceClass(const SearchPath &search_path
 
     // get the candidate connections
     vector<Connection> equivalenceConnections = getAllNodeConnections(search_path[0]);
-    equivalenceConnections = filterConnections(equivalenceConnections, 0,           search_path(0, slotIndex-1));
-    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1, search_path(slotIndex+1, search_path.size()-1));
+    equivalenceConnections = filterConnections(equivalenceConnections, 0,           SearchPath(search_path(0, slotIndex-1)));
+    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1, SearchPath(search_path(slotIndex+1, search_path.size()-1)));
 
     //build equivalence class
     EquivalenceClass ec;
@@ -460,7 +460,7 @@ EquivalenceClass RDSGraph::computeEquivalenceClass(const SearchPath &search_path
 SearchPath RDSGraph::bootstrap(vector<EquivalenceClass> &encountered_ecs, const SearchPath &search_path, double overlapThreshold) const
 {
     // find all possible connections
-    vector<Connection> equivalenceConnections = filterConnections(getAllNodeConnections(search_path[0]), search_path.size()-1, search_path(search_path.size()-1, search_path.size()-1));
+    vector<Connection> equivalenceConnections = filterConnections(getAllNodeConnections(search_path[0]), search_path.size()-1, SearchPath(search_path(search_path.size()-1, search_path.size()-1)));
 
     // find potential ECs
     encountered_ecs.clear();
@@ -686,9 +686,7 @@ void RDSGraph::rewire(const vector<Connection> &connections, SignificantPattern 
     {
         unsigned int path_index = valid_connections[i].first;
         unsigned int path_pos = valid_connections[i].second;
-
-        paths[path_index].erase( paths[path_index].begin()+path_pos, paths[path_index].begin()+path_pos+pattern_size);
-        paths[path_index].insert(paths[path_index].begin()+path_pos, nodes.size()-1);
+        paths[path_index].rewire(path_pos, path_pos+pattern_size-1, nodes.size()-1);
     }
 
     updateAllConnections();
