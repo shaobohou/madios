@@ -143,7 +143,7 @@ bool RDSGraph::distill(const SearchPath &search_path, const ADIOSParams &params)
 
     SignificantPattern bestPattern(search_path(patterns.front().first, patterns.front().second));
     vector<Connection> connectionsToRewire = getRewirableConnections(connections, patterns.front(), params.alpha);
-    rewire(connectionsToRewire, new SignificantPattern(bestPattern));
+    rewire(connectionsToRewire, SignificantPattern(bestPattern));
 
     std::cout << "BEST PATTERN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << endl;
     std::cout << "RANGE = [" << patterns.front().first << " " << patterns.front().second << "]" << endl;
@@ -250,7 +250,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
         unsigned int slot_index = all_general_slots[i];
         if(all_general_paths[i][slot_index] >= nodes.size()) // if a new EC is expected, temporarily rewire the RDSGraph
         {
-            temp_graph.rewire(vector<Connection>(), new EquivalenceClass(all_general_ecs[i]));
+            temp_graph.rewire(vector<Connection>(), EquivalenceClass(all_general_ecs[i]));
             temp_graph.computeConnectionMatrix(connections, all_general_paths[i]);
             temp_graph.nodes.pop_back();
             temp_graph.updateAllConnections();
@@ -323,7 +323,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
         if(best_path[i] >= old_num_nodes)       // true if a new EC was discovered at the specific slot
         {
             best_path[i] = nodes.size();
-            rewire(vector<Connection>(), new EquivalenceClass(best_ec));
+            rewire(vector<Connection>(), EquivalenceClass(best_ec));
         }
         else if(best_path[i] != search_path[i]) // true if the part of the context was boosted from existing ECs
         {
@@ -336,7 +336,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             {
                 std::cout << "NEW OVERLAP EC USED: E[" << printEquivalenceClass(overlap_ec) << "]" << endl;
                 best_path[i] = nodes.size();
-                rewire(vector<Connection>(), new EquivalenceClass(overlap_ec));
+                rewire(vector<Connection>(), EquivalenceClass(overlap_ec));
             }
             else
             {
@@ -348,7 +348,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     ConnectionMatrix best_connections;
     computeConnectionMatrix(best_connections, best_path);
     vector<Connection> best_pattern_connections = getRewirableConnections(best_connections, best_pattern, params.alpha);
-    rewire(best_pattern_connections, new SignificantPattern(best_path(best_pattern.first, best_pattern.second)));
+    rewire(best_pattern_connections, SignificantPattern(best_path(best_pattern.first, best_pattern.second)));
     std::cout << best_pattern_connections .size() << " occurences rewired" << endl;
     std::cout << "ENDS REWIRING" << endl;
 
@@ -626,19 +626,19 @@ void RDSGraph::rewire(const std::vector<Connection> &connections, unsigned int e
     updateAllConnections();
 }
 
-void RDSGraph::rewire(const vector<Connection> &connections, EquivalenceClass *ec)
+void RDSGraph::rewire(const vector<Connection> &connections, const EquivalenceClass &ec)
 {
-    nodes.push_back(RDSNode(ec, LexiconTypes::EC));
+    nodes.push_back(RDSNode(new EquivalenceClass(ec), LexiconTypes::EC));
     rewire(connections, nodes.size() - 1);
 }
 
-void RDSGraph::rewire(const vector<Connection> &connections, SignificantPattern *pattern)
+void RDSGraph::rewire(const vector<Connection> &connections, const SignificantPattern &sp)
 {
-    nodes.push_back(RDSNode(pattern, LexiconTypes::SP));
-    pattern = static_cast<SignificantPattern*>(nodes.back().lexicon);   // pattern was released during insertion into nodes
+    nodes.push_back(RDSNode(new SignificantPattern(sp), LexiconTypes::SP));
+    const SignificantPattern &pattern = sp;
 
     assert(connections.size() > 0);
-    unsigned int pattern_size = pattern->size();
+    unsigned int pattern_size = pattern.size();
 
     // remove any overlapping connections
     vector<Connection> sorted_connections;
@@ -697,8 +697,8 @@ void RDSGraph::rewire(const vector<Connection> &connections, SignificantPattern 
         // rewiring the parse trees
         SearchPath segment(paths[path_index](path_pos, path_pos+pattern_size-1));
         for(unsigned int j = 0; j < segment.size(); j++)
-            if(segment[j] != (*pattern)[j])
-                trees[path_index].rewire(path_pos+j, path_pos+j, (*pattern)[j]);
+            if(segment[j] != pattern[j])
+                trees[path_index].rewire(path_pos+j, path_pos+j, pattern[j]);
         trees[path_index].rewire(path_pos, path_pos+pattern_size-1, nodes.size()-1);
 
         // rewiring the paths

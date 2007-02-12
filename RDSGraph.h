@@ -49,8 +49,8 @@ class RDSGraph: public Stringable
         // rewiring and update functions
         void updateAllConnections();
         void rewire(const std::vector<Connection> &connections, unsigned int ec);
-        void rewire(const std::vector<Connection> &connections, EquivalenceClass *ec);
-        void rewire(const std::vector<Connection> &connections, SignificantPattern *pattern);
+        void rewire(const std::vector<Connection> &connections, const EquivalenceClass &ec);
+        void rewire(const std::vector<Connection> &connections, const SignificantPattern &sp);
         std::vector<Connection> getRewirableConnections(const ConnectionMatrix &connections, const Range &bestSP, double alpha) const;
 
         // pattern searching auxiliary functions
