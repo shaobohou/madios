@@ -44,8 +44,7 @@ SearchPath SearchPath::substitute(unsigned int start, unsigned int finish, const
     assert(start <= finish);
     assert(finish < size());
 
-    SearchPath newPath;
-    newPath.insert(newPath.end(), begin(), begin()+start);
+    SearchPath newPath(vector<unsigned int>(begin(), begin()+start));
     newPath.insert(newPath.end(), segment.begin(), segment.end());
     newPath.insert(newPath.end(), begin()+finish+1, end());
 
