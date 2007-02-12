@@ -79,12 +79,12 @@ vector<string> RDSGraph::generate() const
     return generate(paths[pathIndex]);
 }
 
-vector<string> RDSGraph::generate(const SearchPath &searchPath) const
+vector<string> RDSGraph::generate(const SearchPath &search_path) const
 {
     vector<string> sequence;
-    for(unsigned int i = 0; i < searchPath.size(); i++)
+    for(unsigned int i = 0; i < search_path.size(); i++)
     {
-        vector<string> segment = generate(searchPath[i]);
+        vector<string> segment = generate(search_path[i]);
         sequence.insert(sequence.end(), segment.begin(), segment.end());
     }
 
@@ -126,12 +126,12 @@ vector<string> RDSGraph::generate(unsigned int node) const
     return sequence;
 }
 
-bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
+bool RDSGraph::distill(const SearchPath &search_path, const ADIOSParams &params)
 {
     // look possible significant pattern found with help of equivalence class
     ConnectionMatrix connections;
     NRMatrix<double> flows, descents;
-    computeConnectionMatrix(connections, searchPath);
+    computeConnectionMatrix(connections, search_path);
     computeDescentsMatrix(flows, descents, connections);
 
     vector<Range> patterns;
@@ -139,7 +139,7 @@ bool RDSGraph::distill(const SearchPath &searchPath, const ADIOSParams &params)
     if(!findSignificantPatterns(patterns, pvalues, connections, flows, descents, params.eta, params.alpha))
         return false;
 
-    SignificantPattern bestPattern(searchPath(patterns.front().first, patterns.front().second));
+    SignificantPattern bestPattern(search_path(patterns.front().first, patterns.front().second));
     vector<Connection> connectionsToRewire = getRewirableConnections(connections, patterns.front(), params.alpha);
     rewire(connectionsToRewire, new SignificantPattern(bestPattern));
 
@@ -245,8 +245,8 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     for(unsigned int i = 0; i < all_general_paths.size(); i++)
     {
         ConnectionMatrix connections;
-        unsigned int slotIndex = all_general_slots[i];
-        if(all_general_paths[i][slotIndex] >= nodes.size()) // if a new EC is expected, temporarily rewire the RDSGraph
+        unsigned int slot_index = all_general_slots[i];
+        if(all_general_paths[i][slot_index] >= nodes.size()) // if a new EC is expected, temporarily rewire the RDSGraph
         {
             temp_graph.rewire(vector<Connection>(), new EquivalenceClass(all_general_ecs[i]));
             temp_graph.computeConnectionMatrix(connections, all_general_paths[i]);
@@ -269,7 +269,11 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
         // add them to the list
         //for(unsigned int j = 0; j < some_patterns.size(); j++)
         for(unsigned int j = 0; j < 1; j++) // just take the best pattern at the moment, use all candidate patterns later
-        {
+        {   // only accept the pattern if the any completely new equivalence class is in the distilled pattern
+            if(all_general_paths[i][all_general_slots[i]] >= nodes.size())
+                if((all_general_slots[i] < some_patterns[j].first) || (all_general_slots[i] > some_patterns[j].second))
+                    continue;
+
             all_patterns.push_back(some_patterns[j]);
             all_pvalues.push_back(some_pvalues[j]);
             pattern2general.push_back(i);
@@ -298,7 +302,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
 
     unsigned int best_general_index = pattern2general[best_pattern_index];
     SearchPath best_path = all_general_paths[best_general_index];
-    //unsigned int best_slot = all_general_slots[best_general_index];
+    unsigned int best_slot = all_general_slots[best_general_index];
     EquivalenceClass best_ec = all_general_ecs[best_general_index];
 
     unsigned int best_boosted_index = general2boost[best_general_index];
@@ -335,7 +339,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             else
             {
                 std::cout << "OLD OVERLAP EC USED: E[" << printNode(best_path[i]) << "]" << endl;
-                rewire(vector<Connection>(), best_path[i]);
+                //rewire(vector<Connection>(), best_path[i]);
             }
         }
     }
@@ -411,33 +415,33 @@ void RDSGraph::buildInitialGraph(const vector<vector<string> > &sequences)
     updateAllConnections();
 }
 
-void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &searchPath) const
+void RDSGraph::computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &search_path) const
 {
     // calculate subpath distributions, symmetrical matrix
-    unsigned dim = searchPath.size();
+    unsigned dim = search_path.size();
     connections = ConnectionMatrix(dim, dim);
     for(unsigned int i = 0; i < dim; i++)
     {
-        connections(i, i) = getAllNodeConnections(searchPath[i]);
+        connections(i, i) = getAllNodeConnections(search_path[i]);
 
         // compute the column from the diagonal
         for(unsigned int j = i + 1; j < dim; j++)
         {
-            connections(j, i) = filterConnections(connections(j - 1, i), j-i, searchPath(j, j));
+            connections(j, i) = filterConnections(connections(j - 1, i), j-i, search_path(j, j));
             connections(i, j) = connections(j, i);
         }
     }
 }
 
-EquivalenceClass RDSGraph::computeEquivalenceClass(const SearchPath &searchPath, unsigned int slotIndex)
+EquivalenceClass RDSGraph::computeEquivalenceClass(const SearchPath &search_path, unsigned int slotIndex)
 {
     assert(0 < slotIndex);
-    assert(slotIndex < (searchPath.size()-1));
+    assert(slotIndex < (search_path.size()-1));
 
     // get the candidate connections
-    vector<Connection> equivalenceConnections = getAllNodeConnections(searchPath[0]);
-    equivalenceConnections = filterConnections(equivalenceConnections, 0,           searchPath(0, slotIndex-1));
-    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1, searchPath(slotIndex+1, searchPath.size()-1));
+    vector<Connection> equivalenceConnections = getAllNodeConnections(search_path[0]);
+    equivalenceConnections = filterConnections(equivalenceConnections, 0,           search_path(0, slotIndex-1));
+    equivalenceConnections = filterConnections(equivalenceConnections, slotIndex+1, search_path(slotIndex+1, search_path.size()-1));
 
     //build equivalence class
     EquivalenceClass ec;
@@ -626,40 +630,66 @@ void RDSGraph::rewire(const vector<Connection> &connections, SignificantPattern 
 {
     nodes.push_back(RDSNode(pattern, LexiconTypes::SP));
 
-    // split connections into groups
-    unsigned int patternLength = pattern->size();
-    vector<vector<Connection> > separateConnections;
+    assert(connections.size() > 0);
+    unsigned int pattern_size = pattern->size();
+
+    // remove any overlapping connections
+    vector<Connection> sorted_connections;
     for(unsigned int i = 0; i < connections.size(); i++)
     {
-        bool found = false;
-        for(unsigned int j = 0; j < separateConnections.size(); j++)
-            if(separateConnections[j].front().first == connections[i].first)
+        unsigned int current_path_index = connections[i].first;
+        unsigned int current_path_pos = connections[i].second;
+
+        bool found_group = false, inserted = false;
+        for(unsigned int j = 0; j < sorted_connections.size(); j++)
+            if(current_path_index == sorted_connections[j].first)
             {
-                bool inserted = false;
-                for(unsigned int k = 0; k < separateConnections[j].size(); k++)
-                    if(separateConnections[j][k].second > connections[i].second)
-                    {
-                        inserted = true;
-                        separateConnections[j].insert(separateConnections[j].begin() + k, connections[i]);
-                        break;
-                    }
-
-                if(!inserted) separateConnections[j].push_back(connections[i]);
-
-                found = true;
+                found_group = true;
+                if(current_path_pos < sorted_connections[j].second)
+                {
+                    sorted_connections.insert(sorted_connections.begin()+j, connections[i]);
+                    inserted = true;
+                    break;
+                }
+            }
+            else if(found_group)
+            {
+                sorted_connections.insert(sorted_connections.begin()+j, connections[i]);
+                inserted = true;
                 break;
             }
 
-        if(!found)
-        {
-            separateConnections.push_back(vector<Connection>());
-            separateConnections.back().push_back(connections[i]);
-        }
+        if(!inserted)
+            sorted_connections.push_back(connections[i]);
     }
 
-    // rewire each group
-    for(unsigned int i = 0; i < separateConnections.size(); i++)
-        paths[separateConnections[i].front().first].rewire(separateConnections[i], nodes.size() - 1, patternLength);
+    // validate the sorted connections
+    vector<Connection> valid_connections;
+    valid_connections.push_back(sorted_connections.front());
+    for(unsigned int i = 1; i < sorted_connections.size(); i++)
+    {
+        unsigned int current_path_index = sorted_connections[i].first;
+        unsigned int current_path_pos = sorted_connections[i].second;
+        unsigned int last_path_index = valid_connections.back().first;
+        unsigned int last_path_pos = valid_connections.back().second;
+
+        // the path is the same as the last path the pattern overlaps with the last pattern then do not rewire it
+        if((current_path_index == last_path_index) && (current_path_pos <= (last_path_pos+pattern_size-1)))
+            continue;
+
+        valid_connections.push_back(sorted_connections[i]);
+    }
+    std::cout << valid_connections.size() << " valid_connections" << endl;
+
+    // rewire the connections in reverse order to avoid problems with path changing size
+    for(unsigned int i = valid_connections.size()-1; i < valid_connections.size(); i--)
+    {
+        unsigned int path_index = valid_connections[i].first;
+        unsigned int path_pos = valid_connections[i].second;
+
+        paths[path_index].erase( paths[path_index].begin()+path_pos, paths[path_index].begin()+path_pos+pattern_size);
+        paths[path_index].insert(paths[path_index].begin()+path_pos, nodes.size()-1);
+    }
 
     updateAllConnections();
 }
