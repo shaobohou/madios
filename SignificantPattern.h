@@ -13,7 +13,6 @@ class SignificantPattern: public LexiconUnit, public std::vector<unsigned int>
         explicit SignificantPattern(const std::vector<unsigned int> &sequence);
         virtual ~SignificantPattern();
 
-        bool contains(unsigned int unit) const;
         unsigned int find(unsigned int unit) const;
 
         virtual LexiconUnit* makeCopy() const;

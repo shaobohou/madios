@@ -19,15 +19,6 @@ SignificantPattern::~SignificantPattern()
 {
 }
 
-bool SignificantPattern::contains(unsigned int unit) const
-{
-    for(unsigned int i = 0; i < size(); i++)
-        if(at(i) == unit)
-            return true;
-
-    return false;
-}
-
 unsigned int SignificantPattern::find(unsigned int unit) const
 {
     for(unsigned int i = 0; i < size(); i++)
