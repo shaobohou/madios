@@ -22,45 +22,22 @@ EquivalenceClass::~EquivalenceClass()
 EquivalenceClass EquivalenceClass::computeOverlapEC(const EquivalenceClass &other) const
 {
     EquivalenceClass overlap;
-    for(unsigned int i = 0; i < size(); i++)
-        for(unsigned int j = 0; j < other.size(); j++)
-            if(at(i) == other[j])
-                overlap.add(at(i));
+    for(unsigned int i = 0; i < other.size(); i++)
+        if(has(other[i]))
+            overlap.add(other[i]);
 
     return overlap;
 }
 
-double EquivalenceClass::computeOverlapRatio(const EquivalenceClass &other) const
-{
-    return static_cast<double>(computeOverlapEC(other).size()) / other.size();
-}
-
-bool EquivalenceClass::operator==(const EquivalenceClass &other) const
-{
-    if(size() != other.size())
-        return false;
-
-    for(unsigned int i = 0; i < size(); i++)
-        if(at(i) != other[i])
-            return false;
-
-    return true;
-}
-
 bool EquivalenceClass::has(unsigned int unit) const
 {
-    for(unsigned int i = 0; i < size(); i++)
-        if(at(i) == unit)
-            return true;
-
-    return false;
+    return (find(begin(), end(), unit) != end());
 }
 
 bool EquivalenceClass::add(unsigned int unit)
 {
-    for(unsigned int i = 0; i < size(); i++)
-        if(at(i) == unit)
-            return false;
+    if(has(unit))
+        return false;
 
     push_back(unit);
     return true;

@@ -493,7 +493,8 @@ SearchPath RDSGraph::bootstrap(vector<EquivalenceClass> &encountered_ecs, const 
         for(unsigned int j = 0; j < nodes.size(); j++)
             if(nodes[j].type == LexiconTypes::EC)
             {
-                double overlap = encountered_ecs[i].computeOverlapRatio(*static_cast<EquivalenceClass *>(nodes[j].lexicon));
+                EquivalenceClass *ec = static_cast<EquivalenceClass *>(nodes[j].lexicon);
+                double overlap = encountered_ecs[i].computeOverlapEC(*ec).size()/static_cast<double>(ec->size());
                 if((overlap > overlap_ratios[i]) && (overlap > overlapThreshold))
                 {
                     overlap_ecs[i] = j;
@@ -871,8 +872,11 @@ unsigned int RDSGraph::findExistingEquivalenceClass(const EquivalenceClass &ec)
 {   // look for the existing ec that is a subset of the given ec
     for(unsigned int i = 0; i < nodes.size(); i++)
         if(nodes[i].type == LexiconTypes::EC)
-            if(ec.computeOverlapRatio(*(static_cast<EquivalenceClass *>(nodes[i].lexicon))) >= 1.0)
+        {
+            EquivalenceClass *temp_ec = static_cast<EquivalenceClass *>(nodes[i].lexicon);
+            if(ec.computeOverlapEC(*temp_ec).size() == temp_ec->size())
                 return i;
+        }
 
     return nodes.size();
 }
