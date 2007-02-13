@@ -29,9 +29,13 @@ class RDSGraph: public Stringable
 
     private:
         unsigned int corpusSize;
+        std::vector<RDSNode> nodes;
         std::vector<SearchPath> paths;
         std::vector<ParseTree<unsigned int> > trees;
-        std::vector<RDSNode> nodes;
+
+        // counts and normalised probabilities
+        std::vector<std::vector<unsigned int> > counts;
+        std::vector<std::vector<double> > probs;
 
         void buildInitialGraph(const std::vector<std::vector<std::string> > &sequences);
         bool distill(const SearchPath &search_path, const ADIOSParams &params);
@@ -59,9 +63,13 @@ class RDSGraph: public Stringable
         double findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
         double findBestLeftDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
 
+        // auxilliary functions
         std::vector<Connection> filterConnections(const std::vector<Connection> &init_cons, unsigned int start_offset, const SearchPath &search_path) const;
         std::vector<Connection> getAllNodeConnections(unsigned int nodeIndex) const;
         unsigned int findExistingEquivalenceClass(const EquivalenceClass &ec);
+
+        // counts the occurences of each lexicon unit
+        void estimateProbabilities();
 
         // print functions
         std::string printSignificantPattern(const SignificantPattern &sp) const;

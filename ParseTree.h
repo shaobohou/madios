@@ -16,13 +16,23 @@ class ParseNode
         ParseNode()
         {
             parent = Connection(0, 0);
-        };
+        }
 
         ParseNode(const T &value, const Connection &parent)
         {
             this->value = value;
             this->parent = parent;
-        };
+        }
+
+        const T& getValue() const
+        {
+            return value;
+        }
+
+        const std::vector<unsigned int>& getChildren() const
+        {
+            return children;
+        }
 
         std::vector<unsigned int> rewireChildren(unsigned int start, unsigned int finish, unsigned new_node)
         {
@@ -46,7 +56,7 @@ class ParseTree
         ParseTree()
         {
             nodes.push_back(ParseNode<T>());   // nodes[0] is always the root
-        };
+        }
 
         ParseTree(const std::vector<T> &values)
         {
@@ -56,7 +66,12 @@ class ParseTree
                 nodes.front().children.push_back(nodes.size());
                 nodes.push_back(ParseNode<T>(values[i], Connection(0, i)));
             }
-        };
+        }
+
+        const std::vector<ParseNode<T> >& getNodes() const
+        {
+            return nodes;
+        }
 
         void rewire(unsigned int start, unsigned int finish, const T &new_node)
         {

@@ -20,9 +20,6 @@ class EquivalenceClass: public LexiconUnit, public std::vector<unsigned int>
 
         virtual LexiconUnit* makeCopy() const;
         virtual std::string toString() const;
-
-    private:
-        std::vector<unsigned int> counts;
 };
 
 #endif

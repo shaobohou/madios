@@ -9,10 +9,8 @@ EquivalenceClass::EquivalenceClass()
 }
 
 EquivalenceClass::EquivalenceClass(const vector<unsigned int> &units)
+:vector<unsigned int>(units)
 {
-    clear();
-    for(unsigned int i = 0; i < units.size(); i++)
-        push_back(units[i]);
 }
 
 EquivalenceClass::~EquivalenceClass()
