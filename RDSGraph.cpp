@@ -1,5 +1,7 @@
 #include "RDSGraph.h"
 
+using std::min;
+using std::max;
 using std::vector;
 using std::pair;
 using std::string;
