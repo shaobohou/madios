@@ -2,7 +2,8 @@
 #define PARSE_TREE_H
 
 #include <vector>
-#include "Definitions.h"
+
+typedef std::pair<unsigned int, unsigned int> Connection;
 
 template <class T>
 class ParseTree;

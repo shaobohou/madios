@@ -2,10 +2,10 @@
 #define SEARCHPATH_H
 
 #include "Stringable.h"
-#include "Definitions.h"
 
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 class SearchPath: public Stringable, public std::vector<unsigned int>
 {
