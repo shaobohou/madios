@@ -4,8 +4,8 @@
 
 TEMPLATE = app
 TARGET +=
-DEPENDPATH += . ../Utils ../Maths
-INCLUDEPATH += . ../Utils ../Maths
+DEPENDPATH += . ../Utils ../Maths ../EarleyParser
+INCLUDEPATH += . ../Utils ../Maths ../EarleyParser
 CONFIG += release
 CONFIG -= qt
 QMAKE_CXXFLAGS_RELEASE += -pedantic -ansi
