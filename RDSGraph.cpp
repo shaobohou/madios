@@ -922,13 +922,13 @@ void RDSGraph::estimateProbabilities()
             unsigned int sum = 0;
             for(unsigned int j = 0; j < trees.size(); j++)
             {
-                const vector<ParseNode<unsigned int> > &tree_nodes = trees[j].getNodes();
+                const vector<ParseNode<unsigned int> > &tree_nodes = trees[j].nodes();
                 for(unsigned int k = 1; k < tree_nodes.size(); k++)     // find the node that has the same value as the EC
-                    if(tree_nodes[k].getValue() == i)
+                    if(tree_nodes[k].value() == i)
                     {
-                        assert(tree_nodes[k].getChildren().size() == 1);// make sure only has one child
-                        unsigned int first_child_pos = tree_nodes[k].getChildren().front();
-                        unsigned int first_child_val = tree_nodes[first_child_pos].getValue();
+                        assert(tree_nodes[k].children().size() == 1);// make sure only has one child
+                        unsigned int first_child_pos = tree_nodes[k].children().front();
+                        unsigned int first_child_val = tree_nodes[first_child_pos].value();
                         for(unsigned int l = 0; l < ec->size(); l++)    // find the element of EC that matches the child of the found node
                             if(ec->at(l) == first_child_val)
                             {
