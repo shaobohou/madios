@@ -329,8 +329,8 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             continue;
 
         // add them to the list
-        //for(unsigned int j = 0; j < some_patterns.size(); j++)
-        for(unsigned int j = 0; j < 1; j++) // just take the best pattern at the moment, use all candidate patterns later
+        for(unsigned int j = 0; j < some_patterns.size(); j++)
+        //for(unsigned int j = 0; j < 1; j++) // just take the best pattern at the moment, use all candidate patterns later
         {   // only accept the pattern if the any completely new equivalence class is in the distilled pattern
             if(all_general_paths[i][all_general_slots[i]] >= nodes.size())
                 if((all_general_slots[i] < some_patterns[j].first) || (all_general_slots[i] > some_patterns[j].second))
@@ -348,11 +348,26 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     bool best_pattern_found = false;
     unsigned int best_pattern_index = all_patterns.size();
     for(unsigned int i = 0; i < all_patterns.size(); i++)
-        if((!best_pattern_found) || (all_pvalues[i] < all_pvalues[best_pattern_index]))
-        {// extra || condition for the case when a new pattern is shorter and therefore more basic than the current best pattern
-            best_pattern_found = true;
-            best_pattern_index = i;
+    {
+        unsigned int current_pattern_length = all_patterns[i].second - all_patterns[i].first;
+        if(best_pattern_found)
+        {
+            unsigned int best_pattern_length = all_patterns[best_pattern_index].second - all_patterns[best_pattern_index].first;
+//             if(current_pattern_length >= best_pattern_length)
+//             {
+//                 if(current_pattern_length == best_pattern_length)
+//                 {
+                    if(!(all_pvalues[i] < all_pvalues[best_pattern_index]))
+                        continue;
+//                 }
+//                 else
+//                     continue;
+//             }
         }
+
+        best_pattern_found = true;
+        best_pattern_index = i;
+    }
     if(!best_pattern_found)
         return false;
     assert(best_pattern_index < all_patterns.size());
