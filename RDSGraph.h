@@ -24,6 +24,8 @@ class RDSGraph: public Stringable
         std::vector<std::string> generate(const SearchPath &search_path) const;
         std::vector<std::string> generate(unsigned int node) const;
         void distill(const ADIOSParams &params);
+        
+        void convert2PCFG(std::ostream &out) const;
 
         virtual std::string toString() const;
 
@@ -35,7 +37,7 @@ class RDSGraph: public Stringable
 
         // counts and normalised probabilities
         std::vector<std::vector<unsigned int> > counts;
-        std::vector<std::vector<double> > probs;
+        //std::vector<std::vector<double> > probs;
 
         void buildInitialGraph(const std::vector<std::vector<std::string> > &sequences);
         bool distill(const SearchPath &search_path, const ADIOSParams &params);
@@ -76,6 +78,7 @@ class RDSGraph: public Stringable
         std::string printEquivalenceClass(const EquivalenceClass &ec) const;
         std::string printNode(unsigned int node) const;
         std::string printPath(const SearchPath &path) const;
+        std::string printNodeName(unsigned int node) const;
 };
 
 void printInfo(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents);

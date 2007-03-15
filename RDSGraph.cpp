@@ -77,10 +77,10 @@ void RDSGraph::distill(const ADIOSParams &params)
     estimateProbabilities();
 
     std::cout << endl << endl << endl;
-    for(unsigned int i = 0; i < probs.size(); i++)
-        if(probs[i].size() > 1)
+    for(unsigned int i = 0; i < counts.size(); i++)
+        if(counts[i].size() > 1)
         {
-            std::cout << i;
+            std::cout << printNodeName(i);
             std::cout <<  " ---> [";
             for(unsigned int j = 0; j < counts[i].size(); j++)
             {
@@ -88,19 +88,51 @@ void RDSGraph::distill(const ADIOSParams &params)
                 if(j < (counts[i].size()-1))
                     std::cout << " | ";
             }
-            std::cout << "]";
+            std::cout << "]";/*
             std::cout <<  " ---> [";
-            for(unsigned int j = 0; j < probs[i].size(); j++)
+            for(unsigned int j = 0; j < counts[i].size(); j++)
             {
-                std::cout << probs[i][j];
-                if(j < (probs[i].size()-1))
+                std::cout << counts[i][j];
+                if(j < (counts[i].size()-1))
                     std::cout << " | ";
             }
-            std::cout << "]" << endl;
+            std::cout << "]";*/
+            std::cout << endl;
         }
     std::cout << endl << endl << endl;
     trees[0].print(0, 0);
     std::cout << endl << endl << endl;
+}
+
+void RDSGraph::convert2PCFG(ostream &out) const
+{
+    out << "S _" << std::endl;
+
+    for(unsigned int i = 0; i < nodes.size(); i++)
+    {
+        if(nodes[i].type == LexiconTypes::EC)
+        {
+            EquivalenceClass *ec = static_cast<EquivalenceClass *>(nodes[i].lexicon);
+            for(unsigned int j = 0; j < ec->size(); j++)
+                out << counts[i][j] << " E" << i << " --> " << printNodeName((*ec)[j]) << std::endl;
+        }
+        else if(nodes[i].type == LexiconTypes::SP)
+        {
+            SignificantPattern *sp = static_cast<SignificantPattern *>(nodes[i].lexicon);
+            out << "1 P" << i << " -->";
+            for(unsigned int j = 0; j < sp->size(); j++)
+                out << " " << printNodeName((*sp)[j]);
+            out << std::endl;
+        }
+    }
+
+    for(unsigned int i = 0; i < paths.size(); i++)
+    {
+        out << "1 S -->";
+        for(unsigned int j = 1; j < paths[i].size()-1; j++)
+            out << " " << printNodeName(paths[i][j]);
+        out << std::endl;
+    }
 }
 
 vector<string> RDSGraph::generate() const
@@ -317,7 +349,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
     unsigned int best_pattern_index = all_patterns.size();
     for(unsigned int i = 0; i < all_patterns.size(); i++)
         if((!best_pattern_found) || (all_pvalues[i] < all_pvalues[best_pattern_index]))
-        {
+        {// extra || condition for the case when a new pattern is shorter and therefore more basic than the current best pattern
             best_pattern_found = true;
             best_pattern_index = i;
         }
@@ -912,7 +944,7 @@ unsigned int RDSGraph::findExistingEquivalenceClass(const EquivalenceClass &ec)
 void RDSGraph::estimateProbabilities()
 {
     counts = vector<vector<unsigned int> >(nodes.size(), vector<unsigned int>());
-    probs = vector<vector<double> >(nodes.size(), vector<double>(1, 1.0));
+    //probs = vector<vector<double> >(nodes.size(), vector<double>(1, 1.0));
     for(unsigned int i = 0; i < nodes.size(); i++)
         if(nodes[i].type == LexiconTypes::EC)
         {
@@ -938,9 +970,9 @@ void RDSGraph::estimateProbabilities()
                     }
             }
 
-            probs[i] = vector<double>(ec->size(), 0);
-            for(unsigned int j = 0; j < probs[i].size(); j++)
-                probs[i][j] = counts[i][j] / static_cast<double>(sum);
+            //probs[i] = vector<double>(ec->size(), 0);
+            //for(unsigned int j = 0; j < probs[i].size(); j++)
+            //    probs[i][j] = counts[i][j] / static_cast<double>(sum);
         }
 }
 
@@ -1023,6 +1055,20 @@ string RDSGraph::printPath(const SearchPath &path) const
         if(i < (path.size() - 1)) sout << " - ";
     }
     sout << "]";
+
+    return sout.str();
+}
+
+std::string RDSGraph::printNodeName(unsigned int node) const
+{
+    ostringstream sout;
+
+    if(nodes[node].type == LexiconTypes::EC)
+        sout << "E" << node;
+    else if(nodes[node].type == LexiconTypes::SP)
+        sout << "P" << node;
+    else
+        sout << *(nodes[node].lexicon);
 
     return sout.str();
 }
