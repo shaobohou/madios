@@ -119,7 +119,7 @@ void RDSGraph::convert2PCFG(ostream &out) const
         else if(nodes[i].type == LexiconTypes::SP)
         {
             SignificantPattern *sp = static_cast<SignificantPattern *>(nodes[i].lexicon);
-            out << "1 P" << i << " -->";
+            out << counts[i][0] << " P" << i << " -->";
             for(unsigned int j = 0; j < sp->size(); j++)
                 out << " " << printNodeName((*sp)[j]);
             out << std::endl;
@@ -958,37 +958,37 @@ unsigned int RDSGraph::findExistingEquivalenceClass(const EquivalenceClass &ec)
 
 void RDSGraph::estimateProbabilities()
 {
-    counts = vector<vector<unsigned int> >(nodes.size(), vector<unsigned int>());
-    //probs = vector<vector<double> >(nodes.size(), vector<double>(1, 1.0));
     for(unsigned int i = 0; i < nodes.size(); i++)
         if(nodes[i].type == LexiconTypes::EC)
         {
             EquivalenceClass *ec = static_cast<EquivalenceClass *>(nodes[i].lexicon);
-            counts[i] = vector<unsigned int>(ec->size(), 0);
-
-            unsigned int sum = 0;
-            for(unsigned int j = 0; j < trees.size(); j++)
-            {
-                const vector<ParseNode<unsigned int> > &tree_nodes = trees[j].nodes();
-                for(unsigned int k = 1; k < tree_nodes.size(); k++)     // find the node that has the same value as the EC
-                    if(tree_nodes[k].value() == i)
-                    {
-                        assert(tree_nodes[k].children().size() == 1);// make sure only has one child
-                        unsigned int first_child_pos = tree_nodes[k].children().front();
-                        unsigned int first_child_val = tree_nodes[first_child_pos].value();
-                        for(unsigned int l = 0; l < ec->size(); l++)    // find the element of EC that matches the child of the found node
-                            if(ec->at(l) == first_child_val)
-                            {
-                                counts[i][l]++;
-                                sum++;
-                            }
-                    }
-            }
-
-            //probs[i] = vector<double>(ec->size(), 0);
-            //for(unsigned int j = 0; j < probs[i].size(); j++)
-            //    probs[i][j] = counts[i][j] / static_cast<double>(sum);
+            counts.push_back(vector<unsigned int>(ec->size(), 0));
         }
+        else
+            counts.push_back(vector<unsigned int>(1, 0));
+
+    for(unsigned int i = 0; i < trees.size(); i++)
+    {
+        const vector<ParseNode<unsigned int> > &tree_nodes = trees[i].nodes();
+        for(unsigned int j = 1; j < tree_nodes.size(); j++)
+        {
+            unsigned int node_index = tree_nodes[j].value();
+            if(nodes[node_index].type == LexiconTypes::EC)
+            {
+                assert(tree_nodes[j].children().size() == 1);
+
+                EquivalenceClass *ec = static_cast<EquivalenceClass *>(nodes[node_index].lexicon);
+                unsigned int first_child_pos = tree_nodes[j].children().front();
+                unsigned int first_child_val = tree_nodes[first_child_pos].value();
+
+                for(unsigned int k = 0; k < ec->size(); k++)
+                    if(ec->at(k) == first_child_val)
+                        counts[node_index][k]++;
+            }
+            else
+                counts[node_index][0]++;
+        }
+    }
 }
 
 string RDSGraph::printSignificantPattern(const SignificantPattern &sp) const
