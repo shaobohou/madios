@@ -1,6 +1,6 @@
 #include "MiscUtils.h"
 #include "RDSGraph.h"
-#include "global.h"
+#include "special.h"
 
 #include <sstream>
 #include <iostream>
@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
     cout << testGraph << endl << endl;
 
     std::cout << endl << "Time elapsed: " << endTime - startTime << " seconds" << endl << endl << endl << endl;
-    
+
     testGraph.convert2PCFG(std::cout);
 /*
     startTime = getTime();

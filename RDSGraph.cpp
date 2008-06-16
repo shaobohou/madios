@@ -8,7 +8,7 @@ using std::string;
 using std::ostream;
 using std::ostringstream;
 using std::endl;
-#include <iostream>
+
 bool isPatternSignificant(const SignificancePair &pvalues, double alpha)
 {
     return (pvalues.first < alpha) && (pvalues.second < alpha);
@@ -137,7 +137,7 @@ void RDSGraph::convert2PCFG(ostream &out) const
 
 vector<string> RDSGraph::generate() const
 {
-    unsigned int pathIndex = static_cast<unsigned int>(floor(uniformRand() * paths.size()));
+    unsigned int pathIndex = static_cast<unsigned int>(floor(uniform_rand() * paths.size()));
     return generate(paths[pathIndex]);
 }
 
@@ -167,7 +167,7 @@ vector<string> RDSGraph::generate(unsigned int node) const
     {
         EquivalenceClass *ec = static_cast<EquivalenceClass *>(nodes[node].lexicon);
         unsigned int numberOfUnits = ec->size();
-        unsigned int randomUnit = static_cast<unsigned int>(floor(numberOfUnits * uniformRand()));
+        unsigned int randomUnit = static_cast<unsigned int>(floor(numberOfUnits * uniform_rand()));
         vector<string> segment = generate(ec->at(randomUnit));
         sequence.insert(sequence.end(), segment.begin(), segment.end());
     }
@@ -192,7 +192,7 @@ bool RDSGraph::distill(const SearchPath &search_path, const ADIOSParams &params)
 {
     // look possible significant pattern found with help of equivalence class
     ConnectionMatrix connections;
-    NRMatrix<double> flows, descents;
+    Array2D<double> flows, descents;
     computeConnectionMatrix(connections, search_path);
     computeDescentsMatrix(flows, descents, connections);
 
@@ -319,7 +319,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
             computeConnectionMatrix(connections, all_general_paths[i]);
 
         // compute flows and descents matrix from connection matrix
-        NRMatrix<double> flows, descents;
+        Array2D<double> flows, descents;
         computeDescentsMatrix(flows, descents, connections);
 
         // look for significant patterns
@@ -330,7 +330,7 @@ bool RDSGraph::generalise(const SearchPath &search_path, const ADIOSParams &para
 
         // add them to the list
         for(unsigned int j = 0; j < some_patterns.size(); j++)
-        //for(unsigned int j = 0; j < 1; j++) // just take the best pattern at the moment, use all candidate patterns later
+//         for(unsigned int j = 0; j < 1; j++) // just take the best pattern at the moment, use all candidate patterns later
         {   // only accept the pattern if the any completely new equivalence class is in the distilled pattern
             if(all_general_paths[i][all_general_slots[i]] >= nodes.size())
                 if((all_general_slots[i] < some_patterns[j].first) || (all_general_slots[i] > some_patterns[j].second))
@@ -582,11 +582,11 @@ SearchPath RDSGraph::bootstrap(vector<EquivalenceClass> &encountered_ecs, const 
     return bootstrap_path;
 }
 
-void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections) const
+void RDSGraph::computeDescentsMatrix(Array2D<double> &flows, Array2D<double> &descents, const ConnectionMatrix &connections) const
 {
     // calculate P_R and P_L
-    unsigned dim = connections.numRows();
-    flows = NRMatrix<double>(dim, dim, -1.0);
+    unsigned dim = connections.dim1();
+    flows = Array2D<double>(dim, dim, -1.0);
     for(unsigned int i = 0; i < dim; i++)
         for(unsigned int j = 0; j < dim; j++)
             if(i > j)
@@ -597,7 +597,7 @@ void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &
                 flows(i, j) = static_cast<double>(connections(i, j).size()) / corpusSize;
 
     // calculate D_R and D_L
-    descents = NRMatrix<double>(dim, dim, -1.0);
+    descents = Array2D<double>(dim, dim, -1.0);
     for(unsigned int i = 0; i < dim; i++)
         for(unsigned int j = 0; j < dim; j++)
             if(i > j)
@@ -608,16 +608,16 @@ void RDSGraph::computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &
                 descents(i, j) = 1.0;
 }
 
-bool RDSGraph::findSignificantPatterns(vector<Range> &patterns, vector<SignificancePair> &pvalues, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, double eta, double alpha) const
+bool RDSGraph::findSignificantPatterns(vector<Range> &patterns, vector<SignificancePair> &pvalues, const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents, double eta, double alpha) const
 {
     patterns.clear();
     pvalues.clear();
 
     //find candidate pattern start and ends
-    unsigned int pathLength = descents.numRows();
+    unsigned int pathLength = descents.dim1();
     vector<unsigned int> candidateEndRows;
     vector<unsigned int> candidateStartRows;
-    for(unsigned int i = 0; i < descents.numRows(); i++)
+    for(int i = 0; i < descents.dim1(); i++)
     {
         for(int j = i - 1; j >= 0; j--)
             if(descents(i, j) < eta)
@@ -626,7 +626,7 @@ bool RDSGraph::findSignificantPatterns(vector<Range> &patterns, vector<Significa
                 break;
             }
 
-        for(unsigned int j = i + 1; j < descents.numCols(); j++)
+        for(int j = i + 1; j < descents.dim2(); j++)
             if(descents(i, j) < eta)
             {
                 candidateStartRows.push_back(i + 1);
@@ -644,7 +644,7 @@ bool RDSGraph::findSignificantPatterns(vector<Range> &patterns, vector<Significa
     //for(unsigned int i = 0; i < candidatePatterns.size(); i++)
     //    std::cout << "Candidate Pattern " << i << " = " << candidatePatterns[i].first << " " << candidatePatterns[i].second << endl;
 
-    NRMatrix<double> pvalueCache(pathLength, pathLength, 2.0);
+    Array2D<double> pvalueCache(pathLength, pathLength, 2.0);
     for(unsigned int i = 0; i < candidatePatterns.size(); i++)
     {   //std::cout << "START+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
         //std::cout << "Testing pattern at [" << candidatePatterns[i].first << " -> " << candidatePatterns[i].second << "]" << endl;
@@ -817,7 +817,7 @@ void RDSGraph::updateAllConnections()
     }
 }
 
-double RDSGraph::computeRightSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const pair<unsigned int, unsigned int> &descentPoint, double eta) const
+double RDSGraph::computeRightSignificance(const ConnectionMatrix &connections, const Array2D<double> &flows, const pair<unsigned int, unsigned int> &descentPoint, double eta) const
 {
     unsigned int row = descentPoint.first;
     unsigned int col = descentPoint.second;
@@ -832,7 +832,7 @@ double RDSGraph::computeRightSignificance(const ConnectionMatrix &connections, c
     return min(max(significance, 0.0), 1.0);
 }
 
-double RDSGraph::computeLeftSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const pair<unsigned int, unsigned int> &descentPoint, double eta) const
+double RDSGraph::computeLeftSignificance(const ConnectionMatrix &connections, const Array2D<double> &flows, const pair<unsigned int, unsigned int> &descentPoint, double eta) const
 {
     unsigned int row = descentPoint.first;
     unsigned int col = descentPoint.second;
@@ -847,7 +847,7 @@ double RDSGraph::computeLeftSignificance(const ConnectionMatrix &connections, co
     return min(max(significance, 0.0), 1.0);;
 }
 
-double RDSGraph::findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const
+double RDSGraph::findBestRightDescentColumn(unsigned int &bestColumn, Array2D<double> &pvalueCache, const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents, const Range &pattern, double eta) const
 {
     double pvalue = 2.0;
     pair<unsigned int, unsigned int> descentPoint(pattern.second + 1, bestColumn);
@@ -868,11 +868,11 @@ double RDSGraph::findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<d
     return pvalue;
 }
 
-double RDSGraph::findBestLeftDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const
+double RDSGraph::findBestLeftDescentColumn(unsigned int &bestColumn, Array2D<double> &pvalueCache, const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents, const Range &pattern, double eta) const
 {
     double pvalue = 2.0;
     pair<unsigned int, unsigned int> descentPoint(pattern.first - 1, bestColumn);
-    for(unsigned int i = pattern.second; i < connections.numCols(); i++)
+    for(int i = pattern.second; i < connections.dim2(); i++)
     {
         descentPoint.second = i;
         if(!(descents(descentPoint.first, descentPoint.second) < eta)) continue;
@@ -1088,25 +1088,25 @@ std::string RDSGraph::printNodeName(unsigned int node) const
     return sout.str();
 }
 
-void printInfo(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents)
+void printInfo(const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents)
 {
-    for(unsigned int i = 0; i < connections.numRows(); i++)
+    for(int i = 0; i < connections.dim1(); i++)
     {
-        for(unsigned int j = 0; j < connections.numCols(); j++)
+        for(int j = 0; j < connections.dim2(); j++)
             std::cout << connections(i, j).size() << "\t";
         std::cout << endl;
     }
     std::cout << endl << endl << endl;
-    for(unsigned int i = 0; i < flows.numRows(); i++)
+    for(int i = 0; i < flows.dim1(); i++)
     {
-        for(unsigned int j = 0; j < flows.numCols(); j++)
+        for(int j = 0; j < flows.dim2(); j++)
             std::cout << flows(i, j) << "\t";
         std::cout << endl;
     }
     std::cout << endl << endl << endl;
-    for(unsigned int i = 0; i < descents.numRows(); i++)
+    for(int i = 0; i < descents.dim1(); i++)
     {
-        for(unsigned int j = 0; j < descents.numCols(); j++)
+        for(int j = 0; j < descents.dim2(); j++)
             std::cout << descents(i, j) << "\t";
         std::cout << endl;
     }

@@ -1,5 +1,7 @@
 #include "SignificantPattern.h"
 
+#include <cassert>
+
 using std::vector;
 using std::string;
 using std::ostringstream;

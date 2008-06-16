@@ -3,7 +3,7 @@
 
 #include "RDSNode.h"
 #include "ADIOSUtils.h"
-#include "global.h"
+#include "special.h"
 #include "MiscUtils.h"
 #include "ParseTree.h"
 
@@ -24,7 +24,7 @@ class RDSGraph: public Stringable
         std::vector<std::string> generate(const SearchPath &search_path) const;
         std::vector<std::string> generate(unsigned int node) const;
         void distill(const ADIOSParams &params);
-        
+
         void convert2PCFG(std::ostream &out) const;
 
         virtual std::string toString() const;
@@ -49,8 +49,8 @@ class RDSGraph: public Stringable
 
         // compute matrix and pattern searching function
         void computeConnectionMatrix(ConnectionMatrix &connections, const SearchPath &search_path) const;
-        void computeDescentsMatrix(NRMatrix<double> &flows, NRMatrix<double> &descents, const ConnectionMatrix &connections) const;
-        bool findSignificantPatterns(std::vector<Range> &patterns, std::vector<SignificancePair> &pvalues, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, double eta, double alpha) const;
+        void computeDescentsMatrix(Array2D<double> &flows, Array2D<double> &descents, const ConnectionMatrix &connections) const;
+        bool findSignificantPatterns(std::vector<Range> &patterns, std::vector<SignificancePair> &pvalues, const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents, double eta, double alpha) const;
 
         // rewiring and update functions
         void updateAllConnections();
@@ -60,10 +60,10 @@ class RDSGraph: public Stringable
         std::vector<Connection> getRewirableConnections(const ConnectionMatrix &connections, const Range &bestSP, double alpha) const;
 
         // pattern searching auxiliary functions
-        double computeRightSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
-        double computeLeftSignificance(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
-        double findBestRightDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
-        double findBestLeftDescentColumn(unsigned int &bestColumn, NRMatrix<double> &pvalueCache, const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents, const Range &pattern, double eta) const;
+        double computeRightSignificance(const ConnectionMatrix &connections, const Array2D<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
+        double computeLeftSignificance(const ConnectionMatrix &connections, const Array2D<double> &flows, const std::pair<unsigned int, unsigned int> &descentPoint, double eta) const;
+        double findBestRightDescentColumn(unsigned int &bestColumn, Array2D<double> &pvalueCache, const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents, const Range &pattern, double eta) const;
+        double findBestLeftDescentColumn(unsigned int &bestColumn, Array2D<double> &pvalueCache, const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents, const Range &pattern, double eta) const;
 
         // auxilliary functions
         std::vector<Connection> filterConnections(const std::vector<Connection> &init_cons, unsigned int start_offset, const SearchPath &search_path) const;
@@ -81,6 +81,6 @@ class RDSGraph: public Stringable
         std::string printNodeName(unsigned int node) const;
 };
 
-void printInfo(const ConnectionMatrix &connections, const NRMatrix<double> &flows, const NRMatrix<double> &descents);
+void printInfo(const ConnectionMatrix &connections, const Array2D<double> &flows, const Array2D<double> &descents);
 
 #endif

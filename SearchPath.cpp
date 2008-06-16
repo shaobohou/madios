@@ -1,5 +1,7 @@
 #include "SearchPath.h"
 
+#include <cassert>
+
 using std::string;
 using std::vector;
 using std::ostream;

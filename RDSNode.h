@@ -1,12 +1,12 @@
 #ifndef RDSNODE_H
 #define RDSNODE_H
 
-#include "NRMatrix.h"
+#include "LinearAlgebra.h"
 #include "LexiconUnit.h"
 #include "ADIOSUtils.h"
 
 typedef std::pair<unsigned int, unsigned int> Connection;
-typedef NRMatrix<std::vector<Connection> > ConnectionMatrix;
+typedef Array2D<std::vector<Connection> > ConnectionMatrix;
 typedef std::pair<double, double> SignificancePair;
 typedef std::pair<unsigned int, unsigned int> Range;
 
