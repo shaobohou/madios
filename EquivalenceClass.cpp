@@ -1,5 +1,7 @@
 #include "EquivalenceClass.h"
 
+#include <algorithm>
+
 using std::vector;
 using std::string;
 using std::ostringstream;
