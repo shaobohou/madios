@@ -1,6 +1,7 @@
 #include "MiscUtils.h"
 #include "RDSGraph.h"
 #include "special.h"
+#include "TimeFuncs.h"
 
 #include <sstream>
 #include <iostream>

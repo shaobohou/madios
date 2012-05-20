@@ -4,8 +4,8 @@
 
 TEMPLATE = app
 TARGET +=
-DEPENDPATH += . ../Utils ../Maths ../Maths\tnt  ../Maths/tnt ../EarleyParser
-INCLUDEPATH += . ../Utils ../Maths ../Maths\tnt  ../Maths/tnt ../EarleyParser
+DEPENDPATH += . utils maths maths/tnt 
+INCLUDEPATH += . utils maths maths/tnt
 CONFIG += release
 CONFIG -= qt
 QMAKE_CXXFLAGS_RELEASE += -pedantic -ansi
@@ -20,7 +20,7 @@ HEADERS += RDSGraph.h \
            SignificantPattern.h \
            EquivalenceClass.h \
            special.h \
-           LinearAlgebra.h
+           TimeFuncs.h
 
 SOURCES += main.cpp \
            RDSGraph.cpp \
@@ -32,4 +32,5 @@ SOURCES += main.cpp \
            SignificantPattern.cpp \
            EquivalenceClass.cpp \
            special.cpp \
-           MiscUtils.cpp
+           MiscUtils.cpp \
+           TimeFuncs.cpp

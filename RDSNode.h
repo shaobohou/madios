@@ -1,9 +1,11 @@
 #ifndef RDSNODE_H
 #define RDSNODE_H
 
-#include "LinearAlgebra.h"
+#include "array2d.h"
 #include "LexiconUnit.h"
 #include "ADIOSUtils.h"
+
+using namespace TNT;
 
 typedef std::pair<unsigned int, unsigned int> Connection;
 typedef Array2D<std::vector<Connection> > ConnectionMatrix;
